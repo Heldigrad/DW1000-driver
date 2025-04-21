@@ -19,7 +19,8 @@ struct spi_dt_spec spispec = SPI_DT_SPEC_GET(DT_NODELABEL(ieee802154), SPIOP, 0)
 const struct gpio_dt_spec cs_gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(spi2), cs_gpios);
 const struct gpio_dt_spec reset_gpio = GPIO_DT_SPEC_GET(DT_NODELABEL(ieee802154), reset_gpios);
 
-int check_devices_ready(){
+int check_devices_ready()
+{
     int ret;
 
     // Check if SPI device is ready
@@ -44,17 +45,13 @@ int check_devices_ready(){
     LOG_INF("CS GPIO configured...");
 
     return 0;
-}   
+}
 
-void reset_devices(){
+void reset_devices()
+{
 
     gpio_pin_set_dt(&reset_gpio, 1);
     k_msleep(2);
     gpio_pin_set_dt(&reset_gpio, 0);
     k_msleep(5);
-
-    // Perform software reset (TX off + soft reset)
-    // dw1000_write_u32(SYS_CTRL, SYS_CTRL_TRXOFF | SYS_CTRL_SFTRST);
-    // k_sleep(K_MSEC(2)); // Wait a bit
-
 }

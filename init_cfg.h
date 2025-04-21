@@ -43,7 +43,7 @@ void initialize()
     dw1000_subwrite_u8(PMSC, 0x00, reg[0]);
     dw1000_subwrite_u8(PMSC, 0x01, reg[1]);
     LOG_INF("b");
-    //dwt_softreset();
+    // dwt_softreset();
     uint8_t softreset = 0x00;
     dw1000_subwrite_u8(PMSC, 0x04, softreset);
 
@@ -58,7 +58,7 @@ void initialize()
     uint8_t softreset_aux3 = 0xF0;
     dw1000_subwrite_u8(PMSC, 3, softreset_aux3);
 
-    //Configure the CPLL lock detect
+    // Configure the CPLL lock detect
     uint8_t softreset_aux4 = 0x04;
     dw1000_subwrite_u8(EXT_SYNC_ID, 0x00, softreset_aux4);
 
@@ -73,10 +73,10 @@ void initialize()
     }
 
     // Set OTP_CTRL LDELOAD bit
-    dw1000_subwrite_u16(0x36, 0x00, 0x0301);
-    dw1000_subwrite_u16(OTP_MEM, OTP_CTRL, 0x8000);
-    k_msleep(5);
-    dw1000_subwrite_u16(0x36, 0x00, 0x0200);
+    // dw1000_subwrite_u16(0x36, 0x00, 0x0301);
+    // dw1000_subwrite_u16(OTP_MEM, OTP_CTRL, 0x8000);
+    // k_msleep(5);
+    // dw1000_subwrite_u16(0x36, 0x00, 0x0200);
 
     // Read OTP revision number
     uint16_t otp_xtaltrim = otp_read(XTRIM_ADDRESS) & 0xffff; // Read 32 bit value, XTAL trim val is in low octet-0 (5 bits)
@@ -122,7 +122,7 @@ void initialize()
 
 dwt_config_t config = {
     5,               // Channel number.
-DWT_PRF_64M,         // Pulse repetition frequency.
+    DWT_PRF_64M,     // Pulse repetition frequency.
     DWT_PLEN_128,    // Preamble length. Used in TX only.
     DWT_PAC8,        // Preamble acquisition chunk size. Used in RX only.
     9,               // TX preamble code. Used in TX only.
@@ -141,7 +141,7 @@ void configure()
     uint32_t regval;
     uint16_t reg16 = 0x28F4;
     uint8_t prfIndex = config.prf - DWT_PRF_16M;
-    //uint8_t bw = ((chan == 4) || (chan == 7)) ? 1 : 0; // Select wide or narrow band
+    // uint8_t bw = ((chan == 4) || (chan == 7)) ? 1 : 0; // Select wide or narrow band
 
     pdw1000local.sysCFGreg &= (~SYS_CFG_RXM110K);
 
@@ -151,10 +151,10 @@ void configure()
     pdw1000local.sysCFGreg |= (SYS_CFG_PHR_MODE_11 & ((uint32_t)config.phrMode << 16));
 
     // Set OTP_CTRL LDELOAD bit
-    dw1000_subwrite_u16(0x36, 0x00, 0x0301);
-    dw1000_subwrite_u16(OTP_MEM, OTP_CTRL, 0x8000);
-    k_msleep(5);
-    dw1000_subwrite_u16(0x36, 0x00, 0x0200);
+    // dw1000_subwrite_u16(0x36, 0x00, 0x0301);
+    // dw1000_subwrite_u16(OTP_MEM, OTP_CTRL, 0x8000);
+    // k_msleep(5);
+    // dw1000_subwrite_u16(0x36, 0x00, 0x0200);
 
     dw1000_write_u32(SYS_CFG, pdw1000local.sysCFGreg);
     // Set the lde_replicaCoeff
