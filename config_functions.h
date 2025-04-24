@@ -23,7 +23,70 @@ int dw1000_otp_read(uint16_t otp_addr, uint32_t *value)
     return dw1000_subread_u32(0x2D, 0x0A, value);
 }
 
-void dw1000_default_config()
+void rx_enable()
+{
+    uint16_t temp;
+
+    uint8_t buff = 0;
+    // Need to make sure that the host/IC buffer pointers are aligned before starting RX
+    dw1000_subread_u8(SYS_STATUS, 3, &buff); // Read 1 byte at offset 3 to get the 4th byte out of 5
+
+    if ((buff & (SYS_STATUS_ICRBP >> 24)) !=      // IC side Receive Buffer Pointer
+        ((buff & (SYS_STATUS_HSRBP >> 24)) << 1)) // Host Side Receive Buffer Pointer
+    {
+        dw1000_subwrite_u8(SYS_CTRL, 3, 0x01); // Swap RX buffer status reg (write one to toggle internally)
+    }
+
+    temp = (uint16_t)SYS_CTRL_RXENAB;
+    dw1000_subwrite_u16(SYS_CTRL, 0, temp);
+}
+
+void tx_start()
+{
+    uint8_t temp = 0x00;
+
+    temp |= (uint8_t)SYS_CTRL_TXSTRT;
+    dw1000_subwrite_u8(SYS_CTRL, 0, temp);
+}
+
+void generic_default_configs()
+{
+    // CHAN_CTRL
+    dw1000_write_u32(CHAN_CTRL, 0x21040055);
+
+    // TX_FCTRL
+    dw1000_write_u32(TX_FCTRL, 0x00154006);
+
+    // FS_CTRL
+    dw1000_subwrite_u32(FS_CTRL, 0x07, 0x0800041D);
+    dw1000_subwrite_u8(FS_CTRL, 0x0B, 0xBE);
+}
+
+void tx_default_configs()
+{
+    // RF_TXCTRL
+    dw1000_subwrite_u32(0x28, 0x0C, 0x001E3FE0);
+}
+
+void rx_default_configs()
+{
+    // RF_RXCTRLH
+    dw1000_subwrite_u8(0x28, 0x0B, 0xD8);
+
+    // DRX_TUNE0b
+    dw1000_subwrite_u16(0x27, 0x02, 0x0001);
+
+    // DRX_TUNE1a
+    dw1000_subwrite_u16(0x27, 0x04, 0x0087);
+
+    // DRX_TUNE1b
+    dw1000_subwrite_u16(0x27, 0x06, 0x0020);
+
+    // DRX_TUNE2
+    dw1000_subwrite_u32(0x27, 0x08, 0x311A002D);
+}
+
+void additional_default_configs()
 {
     // Apply overrides
     dw1000_subwrite_u16(0x23, 0x04, 0x8870);     // AGC_TUNE1
@@ -81,30 +144,4 @@ void dw1000_default_config()
     }
 
     LOG_INF("DW1000 default config applied.");
-}
-
-void rx_enable()
-{
-    uint16_t temp;
-
-    uint8_t buff = 0;
-    // Need to make sure that the host/IC buffer pointers are aligned before starting RX
-    dw1000_subread_u8(SYS_STATUS, 3, &buff); // Read 1 byte at offset 3 to get the 4th byte out of 5
-
-    if ((buff & (SYS_STATUS_ICRBP >> 24)) !=      // IC side Receive Buffer Pointer
-        ((buff & (SYS_STATUS_HSRBP >> 24)) << 1)) // Host Side Receive Buffer Pointer
-    {
-        dw1000_subwrite_u8(SYS_CTRL, 3, 0x01); // Swap RX buffer status reg (write one to toggle internally)
-    }
-
-    temp = (uint16_t)SYS_CTRL_RXENAB;
-    dw1000_subwrite_u16(SYS_CTRL, 0, temp);
-}
-
-void tx_start()
-{
-    uint8_t temp = 0x00;
-
-    temp |= (uint8_t)SYS_CTRL_TXSTRT;
-    dw1000_subwrite_u8(SYS_CTRL, 0, temp);
 }

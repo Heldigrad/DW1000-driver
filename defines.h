@@ -22,25 +22,26 @@
 #define PMSC_CTRL0 0x00
 #define OTP_CTRL 0x06
 #define TX_FCTRL 0x08
+#define FS_CTRL 0x2B
 
-//MISC
+// MISC
 #define SYS_CTRL_TRXOFF 0x00000040
 #define SYS_CTRL_SFTRST 0x00000001
 
 #define SYS_STATUS_ICRBP 0x80000000UL /* IC side Receive Buffer Pointer READ ONLY */
 #define SYS_STATUS_HSRBP 0x40000000UL /* Host Side Receive Buffer Pointer */
 #define SYS_CTRL_RXENAB 0x00000100UL  /* Enable Receiver Now */
-#define SYS_CTRL_TXSTRT 0x00000002UL /* Start Transmitting Now */
+#define SYS_CTRL_TXSTRT 0x00000002UL  /* Start Transmitting Now */
 
-//#define SYS_STATUS_TXFRS 0x00000080UL /* Transmit Frame Sent: This is set when the transmitter has completed the sending of a frame */
+// #define SYS_STATUS_TXFRS 0x00000080UL /* Transmit Frame Sent: This is set when the transmitter has completed the sending of a frame */
 #define SYS_STATUS_TXFRS (1 << 7)
 
-//#define SYS_STATUS_RXFCG 0x00004000UL
+// #define SYS_STATUS_RXFCG 0x00004000UL
 
 #define SYS_STATUS_RXDFR (1 << 13)
 #define SYS_STATUS_RXFCG (1 << 14)
 /*
-#define SYS_STATUS_RXFCG     (1 << 27) 
+#define SYS_STATUS_RXFCG     (1 << 27)
 #define SYS_STATUS_CRCERR    (1 << 6)
 #define SYS_STATUS_RXFCE     (1 << 7)
 #define SYS_STATUS_RXFSL     (1 << 8)
@@ -50,36 +51,35 @@
 #define SYS_STATUS_RXSFDTO   (1 << 12)
 */
 
-#define SYS_STATUS_RXPHE (1 << 12) // Receiver PHY Header Error
-#define SYS_STATUS_RXFCE (1 << 15) // Receiver FCS Error
-#define SYS_STATUS_RXRFSL (1 << 16) // Receiver Reed Solomon Frame Sync Loss
-#define SYS_STATUS_RXRFTO (1 << 17) // Receive Frame Wait Timeout
-#define SYS_STATUS_LDEERR (1 << 18) // Leading edge detection processing error
-#define SYS_STATUS_RXPTO (1 << 21) // Preamble detection timeout
+#define SYS_STATUS_RXPHE (1 << 12)   // Receiver PHY Header Error
+#define SYS_STATUS_RXFCE (1 << 15)   // Receiver FCS Error
+#define SYS_STATUS_RXRFSL (1 << 16)  // Receiver Reed Solomon Frame Sync Loss
+#define SYS_STATUS_RXRFTO (1 << 17)  // Receive Frame Wait Timeout
+#define SYS_STATUS_LDEERR (1 << 18)  // Leading edge detection processing error
+#define SYS_STATUS_RXPTO (1 << 21)   // Preamble detection timeout
 #define SYS_STATUS_RXSFDTO (1 << 26) // Receive SFD timeout
-#define SYS_STATUS_AFFREJ (1 << 29) // Automatic Frame Filtering rejection
+#define SYS_STATUS_AFFREJ (1 << 29)  // Automatic Frame Filtering rejection
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
-#define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE | \
-    SYS_STATUS_RXRFSL | SYS_STATUS_RXRFTO | \
-    SYS_STATUS_LDEERR | SYS_STATUS_RXPTO | \
-    SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ)
+#define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE |   \
+                               SYS_STATUS_RXRFSL | SYS_STATUS_RXRFTO | \
+                               SYS_STATUS_LDEERR | SYS_STATUS_RXPTO |  \
+                               SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ)
 
 /*
-#define SYS_STATUS_RXPHE 0x00001000UL   // Receiver PHY Header Error 
-#define SYS_STATUS_RXFCE 0x00008000UL   // Receiver FCS Error 
-#define SYS_STATUS_RXRFSL 0x00010000UL  // Receiver Reed Solomon Frame Sync Loss 
-#define SYS_STATUS_RXRFTO 0x00020000UL  // Receive Frame Wait Timeout 
-#define SYS_STATUS_AFFREJ 0x20000000UL  // Automatic Frame Filtering rejection 
-#define SYS_STATUS_RXSFDTO 0x04000000UL // Receive SFD timeout 
-#define SYS_STATUS_LDEERR 0x00040000UL  // Leading edge detection processing error 
+#define SYS_STATUS_RXPHE 0x00001000UL   // Receiver PHY Header Error
+#define SYS_STATUS_RXFCE 0x00008000UL   // Receiver FCS Error
+#define SYS_STATUS_RXRFSL 0x00010000UL  // Receiver Reed Solomon Frame Sync Loss
+#define SYS_STATUS_RXRFTO 0x00020000UL  // Receive Frame Wait Timeout
+#define SYS_STATUS_AFFREJ 0x20000000UL  // Automatic Frame Filtering rejection
+#define SYS_STATUS_RXSFDTO 0x04000000UL // Receive SFD timeout
+#define SYS_STATUS_LDEERR 0x00040000UL  // Leading edge detection processing error
 
 #define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE | SYS_STATUS_RXRFSL | SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | SYS_STATUS_LDEERR)
 */
 
 // FOR INIT AND CONFIG
-
 
 #define EXT_SYNC_ID 0x24
 #define OTP_IF_ID 0x2D
@@ -244,13 +244,13 @@ typedef struct
     uint16_t sfdTO;         //!< SFD timeout value (in symbols)
 } dwt_config_t;
 
-#define OTP_CTRL_LDELOAD        0x8000          /* This bit forces a load of LDE microcode */
+#define OTP_CTRL_LDELOAD 0x8000 /* This bit forces a load of LDE microcode */
 
 // uint32_t tx_fctrl = 0;
-//         tx_fctrl |= 4;           
-//         tx_fctrl |= (0 << 10);  
-//         tx_fctrl |= (0x2 << 11); 
-//         tx_fctrl |= (0 << 13);   
-//         tx_fctrl |= (0x5 << 18); 
+//         tx_fctrl |= 4;
+//         tx_fctrl |= (0 << 10);
+//         tx_fctrl |= (0x2 << 11);
+//         tx_fctrl |= (0 << 13);
+//         tx_fctrl |= (0x5 << 18);
 
-//dw1000_write_u32(TX_FCTRL, tx_fctrl);
+// dw1000_write_u32(TX_FCTRL, tx_fctrl);
