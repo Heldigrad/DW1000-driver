@@ -11,3 +11,4 @@
 #include "spi_write_functions.h"
 #include "config_functions.h"
 #include "init_cfg.h"
+#include "dw1000_ranging_functions.h"

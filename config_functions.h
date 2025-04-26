@@ -49,13 +49,13 @@ void tx_start()
     dw1000_subwrite_u8(SYS_CTRL, 0, temp);
 }
 
-void generic_default_configs()
+void generic_default_configs(size_t frame_len)
 {
     // CHAN_CTRL
     dw1000_write_u32(CHAN_CTRL, 0x21040055);
 
     // TX_FCTRL
-    dw1000_write_u32(TX_FCTRL, 0x00154006);
+    dw1000_write_u32(TX_FCTRL, 0x00154000 | (frame_len + 2)); // for a 4-byte message, tx_fctrl = 0x00154006
 
     // FS_CTRL
     dw1000_subwrite_u32(FS_CTRL, 0x07, 0x0800041D);
@@ -135,13 +135,13 @@ void additional_default_configs()
     uint8_t ldotune = otp_data & 0xFF;
     if (ldotune != 0)
     {
-        LOG_INF("Applying LDOTUNE calibration: 0x%02X", ldotune);
+        // LOG_INF("Applying LDOTUNE calibration: 0x%02X", ldotune);
         dw1000_subwrite_u8(0x28, 0x30, ldotune); // REG: 0x28, SUB: 0x30
     }
-    else
-    {
-        LOG_INF("No LDOTUNE calibration present in OTP");
-    }
+    // else
+    // {
+    //     LOG_INF("No LDOTUNE calibration present in OTP");
+    // }
 
-    LOG_INF("DW1000 default config applied.");
+    // LOG_INF("DW1000 default config applied.");
 }

@@ -83,7 +83,6 @@ int dw1000_write_u32(uint8_t reg, uint32_t value)
 }
 
 // SPI write sub-address
-
 int dw1000_subwrite(uint8_t reg, uint16_t subaddr, uint8_t *data, size_t len)
 {
     uint8_t header[3];

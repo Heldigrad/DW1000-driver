@@ -23,6 +23,11 @@
 #define OTP_CTRL 0x06
 #define TX_FCTRL 0x08
 #define FS_CTRL 0x2B
+#define TX_TIME 0x17
+#define RX_TIME 0x15
+
+// Other defines
+#define POLL_MSG 0xAAAAAAAA
 
 // MISC
 #define SYS_CTRL_TRXOFF 0x00000040
@@ -40,6 +45,7 @@
 
 #define SYS_STATUS_RXDFR (1 << 13)
 #define SYS_STATUS_RXFCG (1 << 14)
+#define SYS_STATUS_LDE_DONE (1 << 10)
 /*
 #define SYS_STATUS_RXFCG     (1 << 27)
 #define SYS_STATUS_CRCERR    (1 << 6)
