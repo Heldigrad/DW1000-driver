@@ -86,6 +86,42 @@ void rx_default_configs()
     dw1000_subwrite_u32(0x27, 0x08, 0x311A002D);
 }
 
+void rx_soft_reset(void)
+{
+    uint32_t ctrl0;
+    dw1000_subread_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, &ctrl0);
+
+    ctrl0 &= ~SOFTRESET_RX_BIT;
+    dw1000_subwrite_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, ctrl0);
+
+    k_busy_wait(5);
+
+    ctrl0 |= SOFTRESET_RX_BIT;
+    dw1000_subwrite_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, ctrl0);
+
+    // LOG_INF("RX soft reset applied.");
+}
+
+void load_lde_microcode()
+{
+    // 1. Enable LDE clock
+    uint8_t lde_cfg = 0x01;
+    dw1000_subwrite(0x36, 0x0B, &lde_cfg, 1); // PMSC_CTRL0_SUB:0B = 0x01
+
+    // 2. Set LDELOAD bit (0x8000) in OTP_CTRL:06
+    uint8_t otp_cmd[2] = {0x00, 0x80};       // Little-endian 0x8000
+    dw1000_subwrite(0x2D, 0x06, otp_cmd, 2); // OTP_CTRL:06 = 0x8000
+
+    // 3. Wait 150 µs
+    k_busy_wait(150);
+
+    // 4. Disable LDE clock
+    lde_cfg = 0x00;
+    dw1000_subwrite(0x36, 0x0B, &lde_cfg, 1); // PMSC_CTRL0_SUB:0B = 0x00
+
+    // LOG_INF("LDE microcode loaded (LDELOAD applied)");
+}
+
 void additional_default_configs()
 {
     // Apply overrides
@@ -102,13 +138,13 @@ void additional_default_configs()
     // Load LDE microcode (LDELOAD)
     // dw1000_subwrite_u16(PMSC, PMSC_CTRL0, 0x0301);
     // dw1000_subwrite_u16(OTP_IF, OTP_CTRL, 0x8000);
-    // k_busy_wait(1500);
+    // k_busy_wait(150);
     // dw1000_subwrite_u16(PMSC, PMSC_CTRL0, 0x0200);
 
     // Load LDE microcode (LDELOAD) - GPT way
     dw1000_subwrite_u16(PMSC, PMSC_CTRL0, 0x0100);
     dw1000_subwrite_u16(OTP_IF, OTP_CTRL, 0x8000);
-    k_busy_wait(1500);
+    k_busy_wait(150);
     dw1000_subwrite_u16(PMSC, PMSC_CTRL0, 0x0002);
 
     // uint8_t reg[2];

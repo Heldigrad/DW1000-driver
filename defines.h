@@ -27,7 +27,7 @@
 #define RX_TIME 0x15
 
 // Other defines
-#define POLL_MSG 0xAAAAAAAA
+#define POLL_MSG 0xCA7F00D5
 
 // MISC
 #define SYS_CTRL_TRXOFF 0x00000040
@@ -213,6 +213,8 @@ uint16_t target[] = {AGC_TUNE1_16M, AGC_TUNE1_64M};
 #define SYS_CTRL_ID 0x0D
 #define SYS_CTRL_TRXOFF 0x00000040
 #define SYS_CTRL_SFTRST 0x00000001
+#define PMSC_CTRL0_SOFTRESET 0x00
+#define SOFTRESET_RX_BIT (1 << 28)
 
 typedef struct
 {
