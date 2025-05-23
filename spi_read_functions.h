@@ -86,7 +86,8 @@ int dw1000_read_u32(uint8_t reg, uint32_t *value)
              ((uint32_t)buffer[1] << 8) |
              buffer[0];
 
-    LOG_INF("32-bit read from 0x%X: 0x%08X", reg, *value);
+    if (reg != SYS_STATUS)
+        LOG_INF("32-bit read from 0x%X: 0x%08X", reg, *value);
     return 0;
 }
 

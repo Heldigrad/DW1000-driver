@@ -49,7 +49,6 @@ int check_devices_ready()
 
 void reset_devices()
 {
-
     gpio_pin_set_dt(&reset_gpio, 1);
     k_msleep(2);
     gpio_pin_set_dt(&reset_gpio, 0);

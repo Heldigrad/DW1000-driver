@@ -12,3 +12,4 @@
 #include "config_functions.h"
 #include "init_cfg.h"
 #include "dw1000_ranging_functions.h"
+#include "stolen_functions.h"

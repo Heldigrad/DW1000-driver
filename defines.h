@@ -1,6 +1,7 @@
 #pragma once
 
-#define SLEEP_TIME_MS 1000
+#define TX_SLEEP_TIME_MS 2000
+#define RX_SLEEP_TIME_MS 1000
 
 // SPI Configuration
 #define DW1000_SPI_FREQUENCY 2000000                    // 2 MHz
@@ -23,11 +24,30 @@
 #define OTP_CTRL 0x06
 #define TX_FCTRL 0x08
 #define FS_CTRL 0x2B
+#define FS_PLLTUNE 0x0B
 #define TX_TIME 0x17
 #define RX_TIME 0x15
+#define RX_FWTO 0x0C
+#define RF_CONF 0x28
+#define RF_RXCTRLH 0x0B
+#define DRX_CONF 0x27
+#define DRX_TUNE0b 0x02
+#define DRX_TUNE1a 0x04
+#define DRX_TUNE1b 0x06
+#define DRX_TUNE2 0x08
+#define SYS_TIME 0x06
+#define TX_POWER 0x1E
+#define TC 0x2A
+#define TC_PGDELAY 0x0B
+#define AGC_CTRL 0x23
+#define AGC_TUNE1 0x04
+#define AGC_TUNE2 0x0C
+#define LDE_IF 0x2E
+#define LDE_CFG2 0x1806
+#define DRX_SFDTOC 0x20
 
 // Other defines
-#define POLL_MSG 0xCA7F00D5
+#define POLL_MSG 0xB00BB00B
 
 // MISC
 #define SYS_CTRL_TRXOFF 0x00000040
@@ -57,21 +77,61 @@
 #define SYS_STATUS_RXSFDTO   (1 << 12)
 */
 
-#define SYS_STATUS_RXPHE (1 << 12)   // Receiver PHY Header Error
-#define SYS_STATUS_RXFCE (1 << 15)   // Receiver FCS Error
-#define SYS_STATUS_RXRFSL (1 << 16)  // Receiver Reed Solomon Frame Sync Loss
-#define SYS_STATUS_RXRFTO (1 << 17)  // Receive Frame Wait Timeout
-#define SYS_STATUS_LDEERR (1 << 18)  // Leading edge detection processing error
-#define SYS_STATUS_RXPTO (1 << 21)   // Preamble detection timeout
-#define SYS_STATUS_RXSFDTO (1 << 26) // Receive SFD timeout
-#define SYS_STATUS_AFFREJ (1 << 29)  // Automatic Frame Filtering rejection
+#define SYS_STATUS_CPLOCK (1 << 1)     // Clock PLL Lock
+#define SYS_STATUS_CLKPLL_LL (1 << 25) // Clock PLL Losing Lock
+
+#define SYS_STATUS_SLP2INIT (1 << 23) // SLEEP to INIT
+#define SYS_STATUS_RXPHE (1 << 12)    // Receiver PHY Header Error
+#define SYS_STATUS_RXFCE (1 << 15)    // Receiver FCS Error
+#define SYS_STATUS_RXRFSL (1 << 16)   // Receiver Reed Solomon Frame Sync Loss
+#define SYS_STATUS_RXRFTO (1 << 17)   // Receive Frame Wait Timeout
+#define SYS_STATUS_LDEERR (1 << 18)   // Leading edge detection processing error
+#define SYS_STATUS_RXPTO (1 << 21)    // Preamble detection timeout
+#define SYS_STATUS_RXSFDTO (1 << 26)  // Receive SFD timeout
+#define SYS_STATUS_AFFREJ (1 << 29)   // Automatic Frame Filtering rejection
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
 #define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE |   \
                                SYS_STATUS_RXRFSL | SYS_STATUS_RXRFTO | \
                                SYS_STATUS_LDEERR | SYS_STATUS_RXPTO |  \
-                               SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ)
+                               SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | SYS_STATUS_CLKPLL_LL)
+
+#define SYS_STATUS_CLEAR_OTHERS (SYS_STATUS_SLP2INIT | SYS_STATUS_CPLOCK)
+
+const char *bit_descriptions[32] = {
+    "IRQS   - Interrupt Request Status",
+    "CPLOCK - Clock PLL Lock",
+    "ESYNCR - External Sync Clock Reset",
+    "AAT    - Automatic Acknowledge Trigger",
+    "TXFRB  - Transmit Frame Begins",
+    "TXPRS  - Transmit Preamble Sent",
+    "TXPHS  - Transmit PHY Header Sent",
+    "TXFRS  - Transmit Frame Sent",
+    "RXPRD  - Receiver Preamble Detected status",
+    "RXSFDD - Receiver SFD Detected",
+    "LDEDONE - LDE processing done",
+    "RXPHD  - Receiver PHY Header Detect",
+    "RXPHE  - Receiver PHY Header Error",
+    "RXDFR  - Receiver Data Frame Ready",
+    "RXFCG  - Receiver FCS Good",
+    "RXFCE  - Receiver FCS Error",
+    "RXRFSL - Receiver Reed Solomon Frame Sync Loss",
+    "RXRFTO - Receive Frame Wait Timeout",
+    "LDEERR - Leading edge detection processing error",
+    "R      - Reserved",
+    "RXOVRR - Receiver Overrun",
+    "RXPTO  - Preamble detection timeout",
+    "GPIOIRQ - GPIO interrupt",
+    "SLP2INIT - SLEEP to INIT",
+    "RFPLL_LL - RF PLL Losing Lock",
+    "CLKPLL_LL - Clock PLL Losing Lock",
+    "RXSFDTO - Receive SFD timeout",
+    "HPDWARN - Half Period Delay Warning",
+    "TXBERR  - Transmit Buffer Error",
+    "AFFREJ  - Automatic Frame Filtering rejection",
+    "HSRBP   - Host Side Receive Buffer Pointer",
+    "ICRBP   - IC side Receive Buffer Pointer"};
 
 /*
 #define SYS_STATUS_RXPHE 0x00001000UL   // Receiver PHY Header Error
@@ -91,6 +151,7 @@
 #define OTP_IF_ID 0x2D
 #define FS_CTRL_ID 0x2B
 #define TX_FCTRL 0x08
+#define TX_ANTD 0x18
 
 #define XTRIM_ADDRESS 0x1E
 #define LDOTUNE_ADDRESS 0x04
@@ -166,8 +227,6 @@ const uint32_t digital_bb_config[2][4] =
 
 #define AGC_TUNE1_16M 0x8870
 #define AGC_TUNE1_64M 0x889B
-
-uint16_t target[] = {AGC_TUNE1_16M, AGC_TUNE1_64M};
 
 #define USR_SFD_ID 0x21
 
@@ -262,3 +321,21 @@ typedef struct
 //         tx_fctrl |= (0x5 << 18);
 
 // dw1000_write_u32(TX_FCTRL, tx_fctrl);
+
+#define DW_NS_SFD_LEN_110K 64 /* Decawave non-standard SFD length for 110 kbps */
+#define DW_NS_SFD_LEN_850K 16 /* Decawave non-standard SFD length for 850 kbps */
+#define DW_NS_SFD_LEN_6M8 8   /* Decawave non-standard SFD length for 6.8 Mbps */
+
+#define DWT_NO_SYNC_PTRS 4 // Do not try to sync IC side and Host side buffer pointers when enabling RX. This is used to perform manual RX
+#define SYS_CTRL_HRBT_OFFSET (3)
+#define DWT_START_RX_DELAYED 1          // Set up delayed RX, if "late" error triggers, then the RX will be enabled immediately
+#define SYS_CTRL_RXDLYE 0x00000200UL    /* Receiver Delayed Enable (Enables Receiver when SY_TIME[0x??] == RXD_TIME[0x??] CHECK comment*/
+#define SYS_STATUS_HPDWARN 0x08000000UL /* Half Period Delay Warning */
+#define DWT_IDLE_ON_DLY_ERR 2           // If delayed RX failed due to "late" error then if this
+#define TX_FCTRL_TXBOFFS_SHFT (22)
+#define TX_FCTRL_TR_SHFT (15)
+#define DWT_RESPONSE_EXPECTED 2
+#define SYS_CTRL_WAIT4RESP 0x00000080UL /* Wait for Response */
+#define DWT_START_TX_DELAYED 1
+#define SYS_CTRL_TXDLYS 0x00000004UL /* Transmitter Delayed Sending (initiates sending when SYS_TIME == TXD_TIME */
+#define SYS_STATUS_TXERR (0x0408)    /* These bits are the 16 high bits of status register TXPUTE and HPDWARN flags */
