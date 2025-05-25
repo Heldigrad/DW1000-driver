@@ -143,33 +143,52 @@ void rx_default_configs()
 void rx_soft_reset(void)
 {
     uint32_t ctrl0;
-    dw1000_subread_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, &ctrl0);
+    dw1000_subread_u32(PMSC_ID, PMSC_CTRL0_SOFTRESET, &ctrl0);
 
-    ctrl0 &= ~SOFTRESET_RX_BIT;
-    dw1000_subwrite_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, ctrl0);
+    ctrl0 &= (uint32_t)(~SOFTRESET_RX_BIT);
+    dw1000_subwrite_u32(PMSC_ID, PMSC_CTRL0_SOFTRESET, ctrl0);
 
     k_busy_wait(5);
 
-    ctrl0 |= SOFTRESET_RX_BIT;
-    dw1000_subwrite_u32(PMSC_CTRL0, PMSC_CTRL0_SOFTRESET, ctrl0);
+    ctrl0 = ctrl0 | (uint32_t)SOFTRESET_RX_BIT;
+
+    dw1000_subwrite_u32(PMSC_ID, PMSC_CTRL0_SOFTRESET, ctrl0);
 }
 
 void load_lde_microcode()
 {
-    // 1. Enable LDE clock
-    uint8_t lde_cfg = 0x01;
-    dw1000_subwrite(0x36, 0x0B, &lde_cfg, 1); // PMSC_CTRL0_SUB:0B = 0x01
+    uint32_t biacs;
+    dw1000_subread_u32(0x36, 0x00, &biacs);
 
-    // 2. Set LDELOAD bit (0x8000) in OTP_CTRL:06
-    uint8_t otp_cmd[2] = {0x00, 0x80};       // Little-endian 0x8000
-    dw1000_subwrite(0x2D, 0x06, otp_cmd, 2); // OTP_CTRL:06 = 0x8000
+    biacs = (biacs & 0xFFFF0000) | 0x0103;
 
+    dw1000_subwrite_u32(0x36, 0x00, biacs);
+
+    dw1000_subread_u32(0x36, 0x00, &biacs);
+
+    dw1000_subwrite_u16(0x2D, 0x06, 0x8000); // OTP_CTRL:06 = 0x8000
+
+    biacs = (biacs & 0xFFFF0000);
+    biacs |= 0x0200;
     // 3. Wait 150 µs
     k_busy_wait(150);
 
     // 4. Disable LDE clock
-    lde_cfg = 0x00;
-    dw1000_subwrite(0x36, 0x0B, &lde_cfg, 1); // PMSC_CTRL0_SUB:0B = 0x00
+
+    dw1000_subwrite_u32(0x36, 0x00, biacs);
+
+    dw1000_subread_u32(0x36, 0x00, &biacs);
+    LOG_INF("Read value from 0x36:00 = %0x", biacs);
+
+    uint32_t lderun, lderunebit;
+    dw1000_subread_u32(0x36, 0x04, &lderun);
+
+    lderunebit = (1 << 17);
+    if (lderun & lderunebit == 0)
+    {
+        lderun |= lderunebit;
+        dw1000_subwrite_u32(0x36, 0x04, lderun);
+    }
 }
 
 void additional_default_configs()
@@ -256,4 +275,32 @@ void print_enabled_bits(uint32_t value)
             }
         }
     }
+}
+
+void set_check_lde_load()
+{
+    uint16_t otp_ctrl_val, lde_load;
+    lde_load = (1 << 15);
+    uint32_t lderun, lderunebit;
+
+    lderunebit = (1 << 17);
+
+    dw1000_subread_u32(0x36, 0x04, &lderun);
+
+    dw1000_subread_u16(0x2D, 0x06, &otp_ctrl_val);
+    otp_ctrl_val |= lde_load;
+    LOG_INF("new value = %0x", otp_ctrl_val);
+
+    dw1000_subwrite_u16(0x2D, 0x06, otp_ctrl_val);
+
+    dw1000_subread_u16(0x2D, 0x06, &otp_ctrl_val);
+
+    dw1000_subread_u16(0x2D, 0x06, &otp_ctrl_val);
+    while (otp_ctrl_val & lde_load != 0)
+    {
+    };
+
+    dw1000_subread_u16(0x2D, 0x06, &otp_ctrl_val);
+
+    LOG_INF("LDE microcode loaded.");
 }

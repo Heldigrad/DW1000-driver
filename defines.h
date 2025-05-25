@@ -89,6 +89,7 @@
 #define SYS_STATUS_RXPTO (1 << 21)    // Preamble detection timeout
 #define SYS_STATUS_RXSFDTO (1 << 26)  // Receive SFD timeout
 #define SYS_STATUS_AFFREJ (1 << 29)   // Automatic Frame Filtering rejection
+#define SYS_STATUS_LDEDONE (1 << 10)
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
@@ -268,6 +269,7 @@ const uint32_t digital_bb_config[2][4] =
 #define PMSC_ID 0x36
 #define OTP_IF_ID 0x2D
 #define PMSC_CTRL0 0x00
+#define PMSC_CTRL1 0x04
 #define OTP_CTRL 0x06
 #define SYS_CTRL_ID 0x0D
 #define SYS_CTRL_TRXOFF 0x00000040

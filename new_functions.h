@@ -35,7 +35,7 @@ const uint8_t dwnsSFDlen[] = {
     DW_NS_SFD_LEN_850K,
     DW_NS_SFD_LEN_6M8};
 
-void stolen_softreset()
+void new_softreset()
 {
     //_dwt_disablesequencing();
 
@@ -45,20 +45,20 @@ void stolen_softreset()
     dw1000_subwrite_u8(AON_ID, 0x06, 0x00);
     // Upload the new configuration
     dw1000_subwrite_u8(AON_ID, 0x02, 0x00); // Clear the register
-    dw1000_subwrite_u8(AON_ID, 0x02, 0x02);
+    dw1000_subwrite_u8(AON_ID, 0x02, 0x20);
 
-    // Reset HIF, TX, RX and PMSC (set the reset bits)
-    dw1000_subwrite_u8(PMSC_ID, 3, 0x00);
+    //     // Reset HIF, TX, RX and PMSC (set the reset bits)
+    //     dw1000_subwrite_u8(PMSC_ID, 3, 0x00);
 
-    // DW1000 needs a 10us sleep to let clk PLL lock after reset - the PLL will automatically lock after the reset
-    // Could also have polled the PLL lock flag, but then the SPI needs to be < 3MHz !! So a simple delay is easier
-    k_msleep(1);
+    //     // DW1000 needs a 10us sleep to let clk PLL lock after reset - the PLL will automatically lock after the reset
+    //     // Could also have polled the PLL lock flag, but then the SPI needs to be < 3MHz !! So a simple delay is easier
+    //     k_msleep(10);
 
     // Clear the reset bits
     dw1000_subwrite_u8(PMSC_ID, 3, 0xF0);
 }
 
-void stolen_enable_clocks(int clocks)
+void new_enable_clocks(int clocks)
 {
     uint8_t reg[2];
 
@@ -83,11 +83,11 @@ void stolen_enable_clocks(int clocks)
     }
 
     // Need to write lower byte separately before setting the higher byte(s)
-    dw1000_subwrite_u8(PMSC_ID, 0x00, reg[0]);
-    dw1000_subwrite_u8(PMSC_ID, 0x1, reg[1]);
+    dw1000_subwrite_u8(PMSC_ID, 0x00, reg[1]);
+    dw1000_subwrite_u8(PMSC_ID, 0x1, reg[0]);
 }
 
-uint32_t stolen_otp_read(uint16_t address)
+uint32_t new_otp_read(uint16_t address)
 {
     uint32_t ret_data;
 
@@ -105,14 +105,14 @@ uint32_t stolen_otp_read(uint16_t address)
     return ret_data;
 }
 
-void stolen_setxtaltrim(uint8_t value)
+void new_setxtaltrim(uint8_t value)
 {
     // The 3 MSb in this 8-bit register must be kept to 0b011 to avoid any malfunction.
     uint8_t reg_val = (3 << 5) | (value & 0x1F);
     dw1000_subwrite_u8(FS_CTRL_ID, 0x0E, reg_val);
 }
 
-void stolen_init()
+void new_init()
 {
     dblbuffon = 0;  // - set to 0 - meaning double buffer mode is off by default
     wait4resp = 0;  // - set to 0 - meaning wait for response not active
@@ -122,17 +122,17 @@ void stolen_init()
     vBatP = 0;
     tempP = 0;
 
-    // stolen_softreset();
+    new_softreset();
 
     uint32_t dev_id;
 
-    // stolen_enable_clocks(0);
+    new_enable_clocks(0);
 
     // Configure the CPLL lock detect
     dw1000_subwrite_u8(EXT_SYNC_ID, 0x00, 0x04);
 
     // Load LDO tune from OTP and kick it if there is a value actually programmed.
-    uint32_t ldo_tune = stolen_otp_read(0x04);
+    uint32_t ldo_tune = new_otp_read(0x04);
     if ((ldo_tune & 0xFF) != 0)
     {
         // Kick LDO tune
@@ -141,8 +141,8 @@ void stolen_init()
     }
 
     // Read OTP revision number
-    uint16_t otp_xtaltrim_and_rev = stolen_otp_read(0x1E) & 0xffff; // Read 32 bit value, XTAL trim val is in low octet-0 (5 bits)
-    otprev = (otp_xtaltrim_and_rev >> 8) & 0xff;                    // OTP revision is the next byte
+    uint16_t otp_xtaltrim_and_rev = new_otp_read(0x1E) & 0xffff; // Read 32 bit value, XTAL trim val is in low octet-0 (5 bits)
+    otprev = (otp_xtaltrim_and_rev >> 8) & 0xff;                 // OTP revision is the next byte
 
     // XTAL trim
     if ((otp_xtaltrim_and_rev & 0x1F) == 0) // A value of 0 means that the crystal has not been trimmed
@@ -150,17 +150,17 @@ void stolen_init()
         otp_xtaltrim_and_rev = 0x10; // Set to mid-range if no calibration value inside
     }
     // Configure XTAL trim
-    stolen_setxtaltrim((uint8_t)otp_xtaltrim_and_rev);
+    new_setxtaltrim((uint8_t)otp_xtaltrim_and_rev);
 
     // Load leading edge detect code (LDE/microcode)
     // Should disable the LDERUN bit enable if LDE has not been loaded
-    uint16_t rega;
-    dw1000_subread_u16(PMSC_ID, 0x04 + 1, &rega);
-    rega &= 0xFDFF; // Clear LDERUN bit
-    dw1000_subwrite_u16(PMSC_ID, 0x04 + 1, rega);
+    // uint16_t rega;
+    // dw1000_subread_u16(PMSC_ID, 0x04 + 1, &rega);
+    // rega &= 0xFDFF; // Clear LDERUN bit
+    // dw1000_subwrite_u16(PMSC_ID, 0x04 + 1, rega);
 
     // Enable clocks for sequencing
-    stolen_enable_clocks(1);
+    new_enable_clocks(1);
 
     // The 3 bits in AON CFG1 register must be cleared to ensure proper
     // operation of the DW1000 in DEEPSLEEP mode.
@@ -171,7 +171,7 @@ void stolen_init()
     dw1000_read_u32(TX_FCTRL, &txFCTRL);
 }
 
-void stolen_configlde(int prfIndex)
+void new_configlde(int prfIndex)
 {
     dw1000_subwrite_u8(LDE_IF_ID, 0x0806, (0x60) | (13)); // 8-bit configuration register
 
@@ -185,7 +185,7 @@ void stolen_configlde(int prfIndex)
     }
 }
 
-void stolen_configure()
+void new_configure()
 {
     uint8_t nsSfd_result = 0;
     uint8_t useDWnsSFD = 0;
@@ -216,7 +216,7 @@ void stolen_configure()
     // Set the lde_replicaCoeff
     dw1000_subwrite_u16(LDE_IF_ID, 0x2804, reg16);
 
-    stolen_configlde(prfIndex);
+    new_configlde(prfIndex);
 
     // Configure PLL2/RF PLL block CFG/TUNE (for a given channel)
     dw1000_subwrite_u32(FS_CTRL_ID, 0x07, 0x0800041DUL);
@@ -298,7 +298,7 @@ void stolen_configure()
     dw1000_subwrite_u8(SYS_CTRL, 0x00, SYS_CTRL_TXSTRT | SYS_CTRL_TRXOFF); // Request TX start and TRX off at the same time
 }
 
-void stolen_sync_rx_bufs()
+void new_sync_rx_bufs()
 {
     uint8_t buff;
     // Need to make sure that the host/IC buffer pointers are aligned before starting RX
@@ -311,14 +311,14 @@ void stolen_sync_rx_bufs()
     }
 }
 
-void stolen_rx_enable(int mode)
+void new_rx_enable(int mode)
 {
     uint16_t temp;
     uint8_t temp1;
 
     if ((mode & DWT_NO_SYNC_PTRS) == 0)
     {
-        stolen_sync_rx_bufs();
+        new_sync_rx_bufs();
     }
 
     temp = (uint16_t)SYS_CTRL_RXENAB;
@@ -331,7 +331,7 @@ void stolen_rx_enable(int mode)
     dw1000_subwrite_u16(SYS_CTRL_ID, 0x00, temp);
 }
 
-void stolen_set_txfctrl(uint16_t txFrameLength, uint16_t txBufferOffset, int ranging)
+void new_set_txfctrl(uint16_t txFrameLength, uint16_t txBufferOffset, int ranging)
 {
     // Write the frame length to the TX frame control register
     // pdw1000local->txFCTRL has kept configured bit rate information
@@ -339,7 +339,7 @@ void stolen_set_txfctrl(uint16_t txFrameLength, uint16_t txBufferOffset, int ran
     dw1000_write_u32(TX_FCTRL, reg32);
 }
 
-void stolen_tx_start(int mode)
+void new_tx_start(int mode)
 {
     uint8_t temp = 0x00;
     uint16_t checkTxOK = 0;
