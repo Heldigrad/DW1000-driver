@@ -13,3 +13,4 @@
 #include "init_cfg.h"
 #include "dw1000_ranging_functions.h"
 #include "new_functions.h"
+#include "bip.h"

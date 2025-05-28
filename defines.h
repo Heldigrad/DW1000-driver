@@ -1,10 +1,10 @@
 #pragma once
 
-#define TX_SLEEP_TIME_MS 2000
+#define TX_SLEEP_TIME_MS 1000
 #define RX_SLEEP_TIME_MS 1000
 
 // SPI Configuration
-#define DW1000_SPI_FREQUENCY 2000000                    // 2 MHz
+#define DW1000_SPI_FREQUENCY 1000000                    // 2 MHz
 #define DW1000_SPI_MODE (SPI_MODE_CPOL | SPI_MODE_CPHA) // SPI Mode 0 (CPOL = 0, CPHA = 0)
 #define SPIOP SPI_WORD_SET(8) | SPI_TRANSFER_MSB
 

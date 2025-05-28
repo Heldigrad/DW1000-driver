@@ -6,12 +6,12 @@
 
 int dw1000_write(uint8_t reg, uint8_t *data, size_t len)
 {
-    uint8_t tx_buf[1 + len];       // Register header + data
+    uint8_t tx_buf[5];             // Register header + data
     tx_buf[0] = 0x80 | reg;        // Op. bit + address
     memcpy(&tx_buf[1], data, len); // Data to be written
 
     struct spi_buf tx_bufs[] = {
-        {.buf = tx_buf, .len = sizeof(tx_buf)},
+        {.buf = tx_buf, .len = len + 1},
     };
 
     struct spi_buf_set tx = {.buffers = tx_bufs, .count = 1};
@@ -77,7 +77,7 @@ int dw1000_write_u32(uint8_t reg, uint32_t value)
     }
     else
     {
-        // LOG_INF("Wrote 32-bit value 0x%08X to register 0x%X", value, reg);
+        LOG_INF("Wrote 32-bit value 0x%08X to register 0x%X", value, reg);
     }
     return ret;
 }
@@ -105,12 +105,12 @@ int dw1000_subwrite(uint8_t reg, uint16_t subaddr, uint8_t *data, size_t len)
     }
 
     // Total TX length: header + data
-    uint8_t tx_buf[header_len + len];
+    uint8_t tx_buf[7];
     memcpy(tx_buf, header, header_len);
     memcpy(tx_buf + header_len, data, len);
 
     struct spi_buf tx_bufs[] = {
-        {.buf = tx_buf, .len = sizeof(tx_buf)},
+        {.buf = tx_buf, .len = len + header_len},
     };
     struct spi_buf_set tx = {.buffers = tx_bufs, .count = 1};
 
@@ -128,7 +128,8 @@ int dw1000_subwrite(uint8_t reg, uint16_t subaddr, uint8_t *data, size_t len)
 
 int dw1000_subwrite_u8(uint8_t reg, uint16_t subaddr, uint8_t value)
 {
-    return dw1000_subwrite(reg, subaddr, &value, sizeof(value));
+    dw1000_subwrite(reg, subaddr, &value, 1);
+    LOG_INF("Wrote 8-bit value 0x%08X to register 0x%X:%0X", value, reg, subaddr);
 }
 
 int dw1000_subwrite_u16(uint8_t reg, uint16_t subaddr, uint16_t value)
@@ -136,7 +137,8 @@ int dw1000_subwrite_u16(uint8_t reg, uint16_t subaddr, uint16_t value)
     uint8_t buffer[2];
     buffer[0] = value & 0xFF;
     buffer[1] = (value >> 8) & 0xFF;
-    return dw1000_subwrite(reg, subaddr, buffer, sizeof(buffer));
+    dw1000_subwrite(reg, subaddr, buffer, sizeof(buffer));
+    LOG_INF("Wrote 16-bit value 0x%08X to register 0x%X:%0X", value, reg, subaddr);
 }
 
 int dw1000_subwrite_u32(uint8_t reg, uint16_t subaddr, uint32_t value)
@@ -146,5 +148,6 @@ int dw1000_subwrite_u32(uint8_t reg, uint16_t subaddr, uint32_t value)
     buffer[1] = (value >> 8) & 0xFF;
     buffer[2] = (value >> 16) & 0xFF;
     buffer[3] = (value >> 24) & 0xFF;
-    return dw1000_subwrite(reg, subaddr, buffer, sizeof(buffer));
+    dw1000_subwrite(reg, subaddr, buffer, sizeof(buffer));
+    LOG_INF("Wrote 32-bit value 0x%08X to register 0x%X:%0X", value, reg, subaddr);
 }

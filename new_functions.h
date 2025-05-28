@@ -343,10 +343,14 @@ void new_rx_enable(int mode)
 
 void new_set_txfctrl(uint16_t txFrameLength, uint16_t txBufferOffset, int ranging)
 {
+    // At this moment, the function parameters don't do anything!
+
     // Write the frame length to the TX frame control register
     // pdw1000local->txFCTRL has kept configured bit rate information
-    uint32_t reg32 = txFCTRL | txFrameLength | ((uint32_t)txBufferOffset << TX_FCTRL_TXBOFFS_SHFT) | ((uint32_t)ranging << TX_FCTRL_TR_SHFT);
-    dw1000_write_u32(TX_FCTRL, reg32);
+    // uint32_t reg32 = txFCTRL | txFrameLength | ((uint32_t)txBufferOffset << TX_FCTRL_TXBOFFS_SHFT) | ((uint32_t)ranging << TX_FCTRL_TR_SHFT);
+    uint32_t val = 0x16C006;
+    dw1000_write_u32(TX_FCTRL, val);
+    // LOG_INF("TX_FCTRL = %0X", reg32);
 }
 
 void new_tx_start(int mode)

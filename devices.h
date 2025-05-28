@@ -8,7 +8,7 @@ LOG_MODULE_REGISTER(dw1000_spi, LOG_LEVEL_DBG);
 const struct device *spi_dev = DEVICE_DT_GET(DT_NODELABEL(spi2));
 const struct spi_config spi_cfg = {
     .frequency = DW1000_SPI_FREQUENCY,
-    .operation = SPI_WORD_SET(8) | DW1000_SPI_MODE,
+    .operation = SPI_WORD_SET(8),
     .slave = 0,
     .cs = NULL, // CS handled via GPIO
 };
