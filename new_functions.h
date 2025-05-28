@@ -169,6 +169,16 @@ void new_init()
     dw1000_read_u32(SYS_CFG, &sysCFGreg);                 // Read sysconfig register
     longFrames = (sysCFGreg & SYS_CFG_PHR_MODE_11) >> 16; // configure longFrames
     dw1000_read_u32(TX_FCTRL, &txFCTRL);
+
+    // On Wake-up load the LDE microcode
+    uint16_t AON_WCFG_reg;
+    uint16_t ONW_LLDE_bit = (1 << 11);
+    dw1000_subread_u16(0x2C, 0x00, &AON_WCFG_reg);
+    AON_WCFG_reg |= ONW_LLDE_bit;
+    dw1000_subwrite_u16(0x2C, 0x00, AON_WCFG_reg);
+
+    // LDE_REPC
+    dw1000_subwrite_u16(0x2E, 0x2804, 0x451E);
 }
 
 void new_configlde(int prfIndex)
@@ -361,4 +371,56 @@ void new_tx_start(int mode)
         temp |= (uint8_t)SYS_CTRL_TXSTRT;
         dw1000_subwrite_u8(SYS_CTRL_ID, 0x00, temp);
     }
+}
+
+void dw1000_soft_reset_gp()
+{
+    // Resetăm digitalul prin PMSC_CTRL0
+    dw1000_subwrite_u16(PMSC, 0x00, 0x0000); // PMSC_CTRL0 = 0x0000 (clear)
+    dw1000_subwrite_u16(PMSC, 0x00, 0x0001); // PMSC_CTRL0 = 0x0001 (set SYSCLKS = 1)
+
+    // Resetăm blocurile digitale și analogice
+    dw1000_subwrite_u8(PMSC, 0x03, 0x00); // PMSC_CTRL1_SUB = 0x00 (resetează și LDO, etc.)
+
+    // Mică întârziere să se stabilizeze clock-ul
+    k_busy_wait(10); // sau k_msleep(1);
+
+    // Reset complet digital + analog (cum scrie în manual):
+    dw1000_subwrite_u8(PMSC, 0x03, 0xF0); // PMSC_CTRL1 soft reset
+    k_busy_wait(5);                       // Delay scurt
+    dw1000_subwrite_u8(PMSC, 0x03, 0x00); // scoate resetul
+}
+
+void clear_regs()
+{
+    // dw1000_write_u32();
+    // dw1000_subwrite_u32();
+    dw1000_subwrite_u32(PMSC, PMSC_CTRL0, 0xF0300200);
+    dw1000_subwrite_u32(PMSC, PMSC_CTRL1, 0x81020738);
+    dw1000_subwrite_u16(0x2D, OTP_CTRL, 0x0000);
+    dw1000_subwrite_u16(0x2D, OTP_ADDR, 0x0000);
+    // TX_ANTD
+    dw1000_subwrite_u8(0x2E, LDE_CFG1, 0x6C);
+    // LDE_CFG2
+    // DRX_TUNE2
+    // DRX_TUNE4H
+    // RF_RXCTRLH
+    dw1000_subwrite_u32(0x28, RF_TXCTRL, 0x1E3DE0);
+    // TC_PGDELAY
+    // FS_PLLCFG
+    // FS_PLLTUNE
+    // FS_XTALT - nu l-as atinge
+    dw1000_subwrite_u32(CHAN_CTRL, 0x00, 0x0055);
+    dw1000_subwrite_u32(TX_FCTRL, 0x00, 0xC);
+    dw1000_subwrite_u32(SYS_CFG, 0x00, 0x1200);
+    // AGC_TUNE1
+    dw1000_subwrite_u32(0x23, AGC_TUNE2, 0X2502A907);
+    dw1000_subwrite_u16(0x23, AGC_TUNE3, 0x0035);
+    // DRX_TUNE0b
+    // DRX_TUNE1a
+    // DRX_TUNE1b
+    // DRX_SFDTOC
+    // DRX_PRETOC
+    // LDE_THRESH
+    // TX_POWER
 }

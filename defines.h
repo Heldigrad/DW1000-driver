@@ -14,8 +14,12 @@
 #define TX_BUFFER 0x09
 #define SYS_CTRL 0x0D
 #define SYS_STATUS 0x0F
+#define AON 0x2C
+#define AON_CTRL 0x02
+#define PANADR 0x03
 #define RX_BUFFER 0x11
 #define CHAN_CTRL 0x1F
+#define SYS_MASK 0x0E
 #define PMSC 0x36
 #define AON_ID 0x2C
 #define OTP_MEM 0x2D
@@ -25,26 +29,35 @@
 #define TX_FCTRL 0x08
 #define FS_CTRL 0x2B
 #define FS_PLLTUNE 0x0B
+#define FS_XTALT 0x0E
 #define TX_TIME 0x17
 #define RX_TIME 0x15
 #define RX_FWTO 0x0C
 #define RF_CONF 0x28
 #define RF_RXCTRLH 0x0B
+#define RF_TXCTRL 0x0C
 #define DRX_CONF 0x27
 #define DRX_TUNE0b 0x02
 #define DRX_TUNE1a 0x04
 #define DRX_TUNE1b 0x06
 #define DRX_TUNE2 0x08
+#define DRX_TUNE4H 0x26
 #define SYS_TIME 0x06
+#define RX_FINFO 0x10
+#define DX_TIME 0x0A
 #define TX_POWER 0x1E
 #define TC 0x2A
 #define TC_PGDELAY 0x0B
+#define FS_PLLCFG 0x07
 #define AGC_CTRL 0x23
 #define AGC_TUNE1 0x04
 #define AGC_TUNE2 0x0C
+#define AGC_TUNE3 0x12
 #define LDE_IF 0x2E
 #define LDE_CFG2 0x1806
+#define LDE_THRESH 0x0000
 #define DRX_SFDTOC 0x20
+#define DRX_PRETOC 0x24
 
 // Other defines
 #define POLL_MSG 0xB00BB00B
@@ -153,6 +166,8 @@ const char *bit_descriptions[32] = {
 #define FS_CTRL_ID 0x2B
 #define TX_FCTRL 0x08
 #define TX_ANTD 0x18
+#define OTP_ADDR 0x04
+#define LDE_CFG1 0x0806
 
 #define XTRIM_ADDRESS 0x1E
 #define LDOTUNE_ADDRESS 0x04

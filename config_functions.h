@@ -157,6 +157,9 @@ void rx_soft_reset(void)
 
 void load_lde_microcode()
 {
+    // Set LDE_CFG2
+    dw1000_subwrite_u16(0x2E, 0x1806, 0x0607);
+
     uint32_t biacs;
     dw1000_subread_u32(0x36, 0x00, &biacs);
 
@@ -170,8 +173,14 @@ void load_lde_microcode()
 
     biacs = (biacs & 0xFFFF0000);
     biacs |= 0x0200;
-    // 3. Wait 150 µs
-    k_busy_wait(150);
+    // 3. For LDELOAD bit to clear
+    // k_busy_wait(150);
+    uint16_t OTP_CTRL_reg;
+    uint16_t LDE_LOAD_bit = (1 << 15);
+    do
+    {
+        dw1000_subread_u16(0x2D, 0x06, &OTP_CTRL_reg);
+    } while (OTP_CTRL_reg & LDE_LOAD_bit);
 
     // 4. Disable LDE clock
 
