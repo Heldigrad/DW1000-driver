@@ -1,10 +1,15 @@
 #pragma once
 
+#define SUCCESS 0
+#define FAILURE 1
+
 #define TX_SLEEP_TIME_MS 1000
 #define RX_SLEEP_TIME_MS 1000
 
+#define POLL_MSG 0x123456789A
+
 // SPI Configuration
-#define DW1000_SPI_FREQUENCY 1000000                    // 2 MHz
+#define DW1000_SPI_FREQUENCY 2000000                    // 2 MHz
 #define DW1000_SPI_MODE (SPI_MODE_CPOL | SPI_MODE_CPHA) // SPI Mode 0 (CPOL = 0, CPHA = 0)
 #define SPIOP SPI_WORD_SET(8) | SPI_TRANSFER_MSB
 
@@ -58,9 +63,16 @@
 #define LDE_THRESH 0x0000
 #define DRX_SFDTOC 0x20
 #define DRX_PRETOC 0x24
-
-// Other defines
-#define POLL_MSG 0xB00BB00B
+#define EXT_SYNC_ID 0x24
+#define OTP_IF 0x2D
+#define FS_CTRL_ID 0x2B
+#define PMSC_CTRL1 0x04
+#define USR_SFD 0x21
+#define OTP_CTRL 0x06
+#define SYS_CTRL_TRXOFF 0x00000040
+#define SYS_CTRL_SFTRST 0x00000001
+#define PMSC_CTRL0_SOFTRESET 0x00
+#define SOFTRESET_RX_BIT (1 << 28)
 
 // MISC
 #define SYS_CTRL_TRXOFF 0x00000040
@@ -71,38 +83,21 @@
 #define SYS_CTRL_RXENAB 0x00000100UL  /* Enable Receiver Now */
 #define SYS_CTRL_TXSTRT 0x00000002UL  /* Start Transmitting Now */
 
-// #define SYS_STATUS_TXFRS 0x00000080UL /* Transmit Frame Sent: This is set when the transmitter has completed the sending of a frame */
-#define SYS_STATUS_TXFRS (1 << 7)
-
-// #define SYS_STATUS_RXFCG 0x00004000UL
-
+// SYS STATUS RX BITS
+#define SYS_STATUS_RXPHE (1 << 12)   // Receiver PHY Header Error
+#define SYS_STATUS_RXFCE (1 << 15)   // Receiver FCS Error
+#define SYS_STATUS_RXRFSL (1 << 16)  // Receiver Reed Solomon Frame Sync Loss
+#define SYS_STATUS_RXRFTO (1 << 17)  // Receive Frame Wait Timeout
+#define SYS_STATUS_LDEERR (1 << 18)  // Leading edge detection processing error
+#define SYS_STATUS_RXPTO (1 << 21)   // Preamble detection timeout
+#define SYS_STATUS_RXSFDTO (1 << 26) // Receive SFD timeout
+#define SYS_STATUS_AFFREJ (1 << 29)  // Automatic Frame Filtering rejection
+#define SYS_STATUS_LDEDONE (1 << 10)
 #define SYS_STATUS_RXDFR (1 << 13)
 #define SYS_STATUS_RXFCG (1 << 14)
 #define SYS_STATUS_LDE_DONE (1 << 10)
-/*
-#define SYS_STATUS_RXFCG     (1 << 27)
-#define SYS_STATUS_CRCERR    (1 << 6)
-#define SYS_STATUS_RXFCE     (1 << 7)
-#define SYS_STATUS_RXFSL     (1 << 8)
-#define SYS_STATUS_RXSTO     (1 << 9)
-#define SYS_STATUS_RXPHE     (1 << 10)
-#define SYS_STATUS_RXRFSL    (1 << 11)
-#define SYS_STATUS_RXSFDTO   (1 << 12)
-*/
 
-#define SYS_STATUS_CPLOCK (1 << 1)     // Clock PLL Lock
-#define SYS_STATUS_CLKPLL_LL (1 << 25) // Clock PLL Losing Lock
-
-#define SYS_STATUS_SLP2INIT (1 << 23) // SLEEP to INIT
-#define SYS_STATUS_RXPHE (1 << 12)    // Receiver PHY Header Error
-#define SYS_STATUS_RXFCE (1 << 15)    // Receiver FCS Error
-#define SYS_STATUS_RXRFSL (1 << 16)   // Receiver Reed Solomon Frame Sync Loss
-#define SYS_STATUS_RXRFTO (1 << 17)   // Receive Frame Wait Timeout
-#define SYS_STATUS_LDEERR (1 << 18)   // Leading edge detection processing error
-#define SYS_STATUS_RXPTO (1 << 21)    // Preamble detection timeout
-#define SYS_STATUS_RXSFDTO (1 << 26)  // Receive SFD timeout
-#define SYS_STATUS_AFFREJ (1 << 29)   // Automatic Frame Filtering rejection
-#define SYS_STATUS_LDEDONE (1 << 10)
+#define DWT_TIME_UNITS ((1.0 / 499.2e6 * 128.0)) // ~15.65ps
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
@@ -111,67 +106,24 @@
                                SYS_STATUS_LDEERR | SYS_STATUS_RXPTO |  \
                                SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | SYS_STATUS_CLKPLL_LL)
 
+// SYS STATUS BITS
+#define SYS_STATUS_SLP2INIT (1 << 23)  // SLEEP to INIT
+#define SYS_STATUS_CPLOCK (1 << 1)     // Clock PLL Lock
+#define SYS_STATUS_CLKPLL_LL (1 << 25) // Clock PLL Losing Lock
 #define SYS_STATUS_CLEAR_OTHERS (SYS_STATUS_SLP2INIT | SYS_STATUS_CPLOCK)
 
-const char *bit_descriptions[32] = {
-    "IRQS   - Interrupt Request Status",
-    "CPLOCK - Clock PLL Lock",
-    "ESYNCR - External Sync Clock Reset",
-    "AAT    - Automatic Acknowledge Trigger",
-    "TXFRB  - Transmit Frame Begins",
-    "TXPRS  - Transmit Preamble Sent",
-    "TXPHS  - Transmit PHY Header Sent",
-    "TXFRS  - Transmit Frame Sent",
-    "RXPRD  - Receiver Preamble Detected status",
-    "RXSFDD - Receiver SFD Detected",
-    "LDEDONE - LDE processing done",
-    "RXPHD  - Receiver PHY Header Detect",
-    "RXPHE  - Receiver PHY Header Error",
-    "RXDFR  - Receiver Data Frame Ready",
-    "RXFCG  - Receiver FCS Good",
-    "RXFCE  - Receiver FCS Error",
-    "RXRFSL - Receiver Reed Solomon Frame Sync Loss",
-    "RXRFTO - Receive Frame Wait Timeout",
-    "LDEERR - Leading edge detection processing error",
-    "R      - Reserved",
-    "RXOVRR - Receiver Overrun",
-    "RXPTO  - Preamble detection timeout",
-    "GPIOIRQ - GPIO interrupt",
-    "SLP2INIT - SLEEP to INIT",
-    "RFPLL_LL - RF PLL Losing Lock",
-    "CLKPLL_LL - Clock PLL Losing Lock",
-    "RXSFDTO - Receive SFD timeout",
-    "HPDWARN - Half Period Delay Warning",
-    "TXBERR  - Transmit Buffer Error",
-    "AFFREJ  - Automatic Frame Filtering rejection",
-    "HSRBP   - Host Side Receive Buffer Pointer",
-    "ICRBP   - IC side Receive Buffer Pointer"};
+// SYS STATUS TX BITS
+#define SYS_STATUS_TXFRB (1 << 4) // TXFRB - Transmit Frame Begins
+#define SYS_STATUS_TXPRS (1 << 5) // TXPRS - Transmit Preamble Sent
+#define SYS_STATUS_TXPHS (1 << 6) // TXPHS - Transmit PHY Header Sent
+#define SYS_STATUS_TXFRS (1 << 7) // TXFRS - Transmit Frame Sent
 
-/*
-#define SYS_STATUS_RXPHE 0x00001000UL   // Receiver PHY Header Error
-#define SYS_STATUS_RXFCE 0x00008000UL   // Receiver FCS Error
-#define SYS_STATUS_RXRFSL 0x00010000UL  // Receiver Reed Solomon Frame Sync Loss
-#define SYS_STATUS_RXRFTO 0x00020000UL  // Receive Frame Wait Timeout
-#define SYS_STATUS_AFFREJ 0x20000000UL  // Automatic Frame Filtering rejection
-#define SYS_STATUS_RXSFDTO 0x04000000UL // Receive SFD timeout
-#define SYS_STATUS_LDEERR 0x00040000UL  // Leading edge detection processing error
+#define SYS_STATUS_TXBERR (1 << 28) // TXBERR - Transmit Buffer Error
+#define SYS_STATUS_TXPUTE (1 << 2)  // TXPUTE - Transmit power up time error
 
-#define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE | SYS_STATUS_RXRFSL | SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | SYS_STATUS_LDEERR)
-*/
-
-// FOR INIT AND CONFIG
-
-#define EXT_SYNC_ID 0x24
-#define OTP_IF_ID 0x2D
-#define FS_CTRL_ID 0x2B
-#define TX_FCTRL 0x08
-#define TX_ANTD 0x18
-#define OTP_ADDR 0x04
-#define LDE_CFG1 0x0806
-
-#define XTRIM_ADDRESS 0x1E
-#define LDOTUNE_ADDRESS 0x04
-#define SYS_CFG_PHR_MODE_11 0x00030000UL
+#define SYS_STATUS_TX_OK (SYS_STATUS_TXFRB | SYS_STATUS_TXPRS | \
+                          SYS_STATUS_TXPHS | SYS_STATUS_TXFRS)
+#define SYS_STATUS_ALL_TX_ERR (SYS_STATUS_TXPUTE | SYS_STATUS_TXBERR)
 
 //! constants for specifying the (Nominal) mean Pulse Repetition Frequency
 //! These are defined for direct write (with a shift if necessary) to CHAN_CTRL and TX_FCTRL regs
@@ -204,20 +156,8 @@ const char *bit_descriptions[32] = {
 #define DWT_BR_6M8 2  //!< UWB bit rate 6.8 Mbits/s
 
 #define SYS_CFG_RXM110K 0x00400000 // UL
-
-#define LDE_IF_ID 0x2E
-
-#define RF_CONF_ID 0x28
-
-#define DRX_CONF_ID 0x27
-
 #define DRX_TUNE1a_PRF16 0x0087
 #define DRX_TUNE1a_PRF64 0x008D
-
-const uint16_t dtune1[2] =
-    {
-        DRX_TUNE1a_PRF16,
-        DRX_TUNE1a_PRF64};
 
 #define DRX_TUNE2_PRF16_PAC8 0x311A003CUL
 #define DRX_TUNE2_PRF16_PAC16 0x331A0052UL
@@ -228,23 +168,10 @@ const uint16_t dtune1[2] =
 #define DRX_TUNE2_PRF64_PAC32 0x353B015EUL
 #define DRX_TUNE2_PRF64_PAC64 0x373B0296UL
 
-const uint32_t digital_bb_config[2][4] =
-    {
-        {DRX_TUNE2_PRF16_PAC8,
-         DRX_TUNE2_PRF16_PAC16,
-         DRX_TUNE2_PRF16_PAC32,
-         DRX_TUNE2_PRF16_PAC64},
-        {DRX_TUNE2_PRF64_PAC8,
-         DRX_TUNE2_PRF64_PAC16,
-         DRX_TUNE2_PRF64_PAC32,
-         DRX_TUNE2_PRF64_PAC64}};
-
 #define AGC_CFG_STS_ID 0x23
 
 #define AGC_TUNE1_16M 0x8870
 #define AGC_TUNE1_64M 0x889B
-
-#define USR_SFD_ID 0x21
 
 /*mask and shift */
 #define CHAN_CTRL_MASK 0xFFFF00FFUL         /* Channel Control Register access mask */
@@ -280,70 +207,12 @@ const uint32_t digital_bb_config[2][4] =
 
 #define SYS_CTRL_TXSTRT 0x00000002UL /* Start Transmitting Now */
 
-// for restoring to default
-#define PMSC_ID 0x36
-#define OTP_IF_ID 0x2D
-#define PMSC_CTRL0 0x00
-#define PMSC_CTRL1 0x04
-#define OTP_CTRL 0x06
-#define SYS_CTRL_ID 0x0D
-#define SYS_CTRL_TRXOFF 0x00000040
-#define SYS_CTRL_SFTRST 0x00000001
-#define PMSC_CTRL0_SOFTRESET 0x00
-#define SOFTRESET_RX_BIT (1 << 28)
-
-typedef struct
-{
-    uint32_t partID;     // IC Part ID - read during initialisation
-    uint32_t lotID;      // IC Lot ID - read during initialisation
-    uint8_t vBatP;       // IC V bat read during production and stored in OTP (Vmeas @ 3V3)
-    uint8_t tempP;       // IC V temp read during production and stored in OTP (Tmeas @ 23C)
-    uint8_t longFrames;  // Flag in non-standard long frame mode
-    uint8_t otprev;      // OTP revision number (read during initialisation)
-    uint32_t txFCTRL;    // Keep TX_FCTRL register config
-    uint32_t sysCFGreg;  // Local copy of system config register
-    uint8_t dblbuffon;   // Double RX buffer mode flag
-    uint8_t wait4resp;   // wait4response was set with last TX start command
-    uint16_t sleep_mode; // Used for automatic reloading of LDO tune and microcode at wake-up
-    uint16_t otp_mask;   // Local copy of the OTP mask used in dwt_initialise call
-    int cbData;          // Callback data structure
-    int cbTxDone;        // Callback for TX confirmation event
-    int cbRxOk;          // Callback for RX good frame event
-    int cbRxTo;          // Callback for RX timeout events
-    int cbRxErr;         // Callback for RX error events
-} dwt_local_data_t;
-
-// for configuration
-typedef struct
-{
-    uint8_t chan;           //!< channel number {1, 2, 3, 4, 5, 7 }
-    uint8_t prf;            //!< Pulse Repetition Frequency {DWT_PRF_16M or DWT_PRF_64M}
-    uint8_t txPreambLength; //!< DWT_PLEN_64..DWT_PLEN_4096
-    uint8_t rxPAC;          //!< Acquisition Chunk Size (Relates to RX preamble length)
-    uint8_t txCode;         //!< TX preamble code
-    uint8_t rxCode;         //!< RX preamble code
-    uint8_t nsSFD;          //!< Boolean should we use non-standard SFD for better performance
-    uint8_t dataRate;       //!< Data Rate {DWT_BR_110K, DWT_BR_850K or DWT_BR_6M8}
-    uint8_t phrMode;        //!< PHR mode {0x0 - standard DWT_PHRMODE_STD, 0x3 - extended frames DWT_PHRMODE_EXT}
-    uint16_t sfdTO;         //!< SFD timeout value (in symbols)
-} dwt_config_t;
-
 #define OTP_CTRL_LDELOAD 0x8000 /* This bit forces a load of LDE microcode */
-
-// uint32_t tx_fctrl = 0;
-//         tx_fctrl |= 4;
-//         tx_fctrl |= (0 << 10);
-//         tx_fctrl |= (0x2 << 11);
-//         tx_fctrl |= (0 << 13);
-//         tx_fctrl |= (0x5 << 18);
-
-// dw1000_write_u32(TX_FCTRL, tx_fctrl);
 
 #define DW_NS_SFD_LEN_110K 64 /* Decawave non-standard SFD length for 110 kbps */
 #define DW_NS_SFD_LEN_850K 16 /* Decawave non-standard SFD length for 850 kbps */
 #define DW_NS_SFD_LEN_6M8 8   /* Decawave non-standard SFD length for 6.8 Mbps */
 
-#define DWT_NO_SYNC_PTRS 4 // Do not try to sync IC side and Host side buffer pointers when enabling RX. This is used to perform manual RX
 #define SYS_CTRL_HRBT_OFFSET (3)
 #define DWT_START_RX_DELAYED 1          // Set up delayed RX, if "late" error triggers, then the RX will be enabled immediately
 #define SYS_CTRL_RXDLYE 0x00000200UL    /* Receiver Delayed Enable (Enables Receiver when SY_TIME[0x??] == RXD_TIME[0x??] CHECK comment*/

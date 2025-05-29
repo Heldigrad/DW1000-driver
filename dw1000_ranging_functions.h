@@ -1,19 +1,14 @@
 #pragma once
 
 #include "includes.h"
+#include "spi_read_functions.h"
+#include "spi_write_functions.h"
+#include "dw1000_configuration_functions.h"
 
-uint64_t get_tx_timestamp()
-{
-    uint64_t tx_ts;
-    dw1000_subread_u40(TX_TIME, 0x00, &tx_ts);
+uint64_t get_tx_timestamp();
 
-    return tx_ts;
-}
+uint64_t get_rx_timestamp();
 
-uint64_t get_rx_timestamp()
-{
-    uint64_t rx_ts;
-    dw1000_subread_u40(RX_TIME, 0x00, &rx_ts);
+int receive(uint64_t *buffer, uint64_t *timestamp);
 
-    return rx_ts;
-}
+int transmit(uint64_t data, int len, uint64_t *timestamp);

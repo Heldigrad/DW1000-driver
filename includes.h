@@ -6,11 +6,5 @@
 #include <zephyr/logging/log.h>
 
 #include "defines.h"
-#include "devices.h"
-#include "spi_read_functions.h"
-#include "spi_write_functions.h"
-#include "config_functions.h"
-#include "init_cfg.h"
-#include "dw1000_ranging_functions.h"
-#include "new_functions.h"
-#include "bip.h"
+
+LOG_MODULE_DECLARE(dw1000_spi, LOG_LEVEL_DBG);
