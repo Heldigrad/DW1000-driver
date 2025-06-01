@@ -59,6 +59,8 @@
 #define AGC_TUNE2 0x0C
 #define AGC_TUNE3 0x12
 #define LDE_IF 0x2E
+#define LDE_RXANTD 0x1804
+#define TX_ANTD 0x18
 #define LDE_CFG2 0x1806
 #define LDE_THRESH 0x0000
 #define DRX_SFDTOC 0x20
@@ -97,7 +99,8 @@
 #define SYS_STATUS_RXFCG (1 << 14)
 #define SYS_STATUS_LDE_DONE (1 << 10)
 
-#define DWT_TIME_UNITS ((1.0 / 499.2e6 * 128.0)) // ~15.65ps
+#define DWT_TIME_UNITS (1.0 / (499.2e6 * 128.0)) // ≈ 15.65e-12
+#define SPEED_OF_LIGHT 299702547.0               // meters per second
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
@@ -225,3 +228,6 @@
 #define DWT_START_TX_DELAYED 1
 #define SYS_CTRL_TXDLYS 0x00000004UL /* Transmitter Delayed Sending (initiates sending when SYS_TIME == TXD_TIME */
 #define SYS_STATUS_TXERR (0x0408)    /* These bits are the 16 high bits of status register TXPUTE and HPDWARN flags */
+
+#define TX_ANT_DLY 16900
+#define RX_ANT_DLY 16900

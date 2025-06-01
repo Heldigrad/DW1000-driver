@@ -1,5 +1,15 @@
 #include "dw1000_ranging_functions.h"
 
+void set_rx_antenna_delay(uint16_t rxDelay)
+{
+    dw1000_subwrite_u16(LDE_IF, LDE_RXANTD, rxDelay);
+}
+
+void set_tx_antenna_delay(uint16_t txDelay)
+{
+    dw1000_subwrite_u16(TX_ANTD, 0x00, txDelay);
+}
+
 uint64_t get_tx_timestamp()
 {
     uint64_t tx_ts;
@@ -18,7 +28,7 @@ uint64_t get_rx_timestamp()
 
 int receive(uint64_t *buffer, uint64_t *timestamp)
 {
-    LOG_INF("Starting receiver...");
+    // LOG_INF("Starting receiver...");
 
     // Clear RX buffer
     dw1000_write_u64(RX_BUFFER, 0x00);
@@ -55,9 +65,8 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
 
 int transmit(uint64_t data, int len, uint64_t *timestamp)
 {
-    LOG_INF("Starting transmitter...");
+    // LOG_INF("Starting transmitter...");
 
-    // Write the data to the IC TX buffer, (-2 bytes for auto generated CRC)
     dw1000_subwrite_u64(TX_BUFFER, 0x00, data);
 
     new_set_txfctrl(len);
@@ -73,7 +82,7 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
     if (!(status & SYS_STATUS_ALL_TX_ERR))
     {
         *timestamp = get_tx_timestamp();
-        // LOG_INF("TX success! T1 = %09llX", T1);
+        // LOG_INF("TX success! T1 = %09llX", *timestamp);
 
         /* Clear TX frame sent event. */
         dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK);
@@ -90,4 +99,32 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
 
         return FAILURE;
     }
+}
+
+double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
+{
+    uint64_t Tround, Treply, Tprop;
+    if (T4 < T1)
+    {
+        // wrap-around correction (max 32-bit value is 0xFFFFFFFF)
+        Tround = (uint64_t)(T4 + (1ULL << 32)) - T1;
+    }
+    else
+    {
+        Tround = T4 - T1;
+    }
+
+    // Time reply duration
+    Treply = T3 - T2;
+
+    // One-way time of flight
+    Tprop = (Tround - Treply) / 2;
+
+    // Convert to seconds using DW1000 time units
+    double tof_sec = Tprop * DWT_TIME_UNITS;
+
+    // Compute distance
+    double distance_m = tof_sec * SPEED_OF_LIGHT;
+
+    return distance_m;
 }

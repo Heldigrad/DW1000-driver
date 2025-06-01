@@ -24,3 +24,5 @@ int dw1000_subread_u16(uint8_t reg, uint16_t subaddr, uint16_t *value);
 int dw1000_subread_u32(uint8_t reg, uint16_t subaddr, uint32_t *value);
 
 int dw1000_subread_u40(uint8_t reg, uint8_t subreg, uint64_t *value);
+
+int dw1000_subread_u64(uint8_t reg, uint8_t subreg, uint64_t *value);
