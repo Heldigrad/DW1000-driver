@@ -74,7 +74,10 @@
 #define SYS_CTRL_TRXOFF 0x00000040
 #define SYS_CTRL_SFTRST 0x00000001
 #define PMSC_CTRL0_SOFTRESET 0x00
+#define ACK_RESP_T 0x1A
 #define SOFTRESET_RX_BIT (1 << 28)
+
+#define ACK_RESP_T_W4R_TIM_MASK 0x000FFFFFUL /* Wait-for-Response turn-around Time 20 bit field */
 
 // MISC
 #define SYS_CTRL_TRXOFF 0x00000040
@@ -121,6 +124,7 @@
 #define SYS_STATUS_TXPHS (1 << 6) // TXPHS - Transmit PHY Header Sent
 #define SYS_STATUS_TXFRS (1 << 7) // TXFRS - Transmit Frame Sent
 
+#define SYS_CFG_RXWTOE 0x10000000UL /* Receive Wait Timeout Enable. */
 #define SYS_STATUS_TXBERR (1 << 28) // TXBERR - Transmit Buffer Error
 #define SYS_STATUS_TXPUTE (1 << 2)  // TXPUTE - Transmit power up time error
 
@@ -229,5 +233,14 @@
 #define SYS_CTRL_TXDLYS 0x00000004UL /* Transmitter Delayed Sending (initiates sending when SYS_TIME == TXD_TIME */
 #define SYS_STATUS_TXERR (0x0408)    /* These bits are the 16 high bits of status register TXPUTE and HPDWARN flags */
 
-#define TX_ANT_DLY 16900
-#define RX_ANT_DLY 16900
+#define TX_ANT_DLY 16436
+#define RX_ANT_DLY 16436
+
+/* Delay between frames, in UWB microseconds. See NOTE 1 below. */
+#define POLL_TX_TO_RESP_RX_DLY_UUS 140
+/* Receive response timeout. See NOTE 5 below. */
+#define RESP_RX_TIMEOUT_UUS 510
+
+/* Delay between frames, in UWB microseconds. See NOTE 1 below. */
+#define POLL_RX_TO_RESP_TX_DLY_UUS 630
+#define UUS_TO_DWT_TIME 65536

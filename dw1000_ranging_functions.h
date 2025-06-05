@@ -18,3 +18,9 @@ int receive(uint64_t *buffer, uint64_t *timestamp);
 int transmit(uint64_t data, int len, uint64_t *timestamp);
 
 double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);
+
+void set_rx_after_tx_delay(uint32_t rxDelayTime);
+
+void set_rx_timeout(uint16_t time);
+
+void set_delayed_trx_time(uint32_t starttime);

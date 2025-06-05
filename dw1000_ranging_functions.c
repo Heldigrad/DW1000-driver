@@ -128,3 +128,42 @@ double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
 
     return distance_m;
 }
+
+void set_rx_after_tx_delay(uint32_t rxDelayTime)
+{
+    uint32_t val;
+    dw1000_read_u32(ACK_RESP_T, &val); // Read ACK_RESP_T_ID register
+
+    val &= ~(ACK_RESP_T_W4R_TIM_MASK); // Clear the timer (19:0)
+
+    val |= (rxDelayTime & ACK_RESP_T_W4R_TIM_MASK); // In UWB microseconds (e.g. turn the receiver on 20uus after TX)
+
+    dw1000_write_u32(ACK_RESP_T, val);
+}
+
+void set_rx_timeout(uint16_t time)
+{
+    uint8_t temp;
+    dw1000_subread_u8(SYS_CFG, 3, &temp);
+
+    if (time > 0)
+    {
+        dw1000_subwrite_u8(RX_FWTO, 0x00, time);
+
+        temp |= (uint8_t)(SYS_CFG_RXWTOE >> 24); // Shift RXWTOE mask as we read the upper byte only
+
+        dw1000_subwrite_u8(SYS_CFG, 3, temp); // Write at offset 3 to write the upper byte only
+    }
+    else
+    {
+        temp &= ~((uint8_t)(SYS_CFG_RXWTOE >> 24)); // Shift RXWTOE mask as we read the upper byte only
+
+        dw1000_subwrite_u8(SYS_CFG, 3, temp); // Write at offset 3 to write the upper byte only
+    }
+}
+
+void set_delayed_trx_time(uint32_t starttime)
+{
+    dw1000_subwrite_u32(DX_TIME, 1, starttime); // Write at offset 1 as the lower 9 bits of this register are ignored
+
+} // end dwt_setdelayedtrxtime()
