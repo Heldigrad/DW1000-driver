@@ -153,9 +153,16 @@ double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
     {
         Tround = T4 - T1;
     }
-
-    // Time reply duration
-    Treply = T3 - T2;
+    if (T3 < T2)
+    {
+        // wrap-around correction (max 32-bit value is 0xFFFFFFFF)
+        Tround = (uint64_t)(T3 + (1ULL << 32)) - T2;
+    }
+    else
+    {
+        // Time reply duration
+        Treply = T3 - T2;
+    }
 
     // One-way time of flight
     Tprop = (Tround - Treply) / 2;
