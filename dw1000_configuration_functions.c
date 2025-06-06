@@ -161,12 +161,12 @@ void new_tx_start(int mode)
 {
     uint8_t temp = 0x00;
 
-    if (mode & DWT_RESPONSE_EXPECTED)
+    if (mode & DWT_RESPONSE_EXPECTED) // 2
     {
         temp = (uint8_t)SYS_CTRL_WAIT4RESP; // Set wait4response bit
     }
 
-    if (mode & DWT_START_TX_DELAYED)
+    if (mode & DWT_START_TX_DELAYED) // 1
     {
         // Both SYS_CTRL_TXSTRT and SYS_CTRL_TXDLYS to correctly enable TX
         temp |= (uint8_t)(SYS_CTRL_TXDLYS | SYS_CTRL_TXSTRT);
@@ -224,4 +224,11 @@ void print_enabled_bits(uint32_t value)
             }
         }
     }
+}
+
+void test_spi()
+{
+    uint32_t dev_id;
+    dw1000_read_u32(DEV_ID, &dev_id);
+    LOG_INF("dev_id = %0X", dev_id);
 }

@@ -3,7 +3,7 @@
 #define SUCCESS 0
 #define FAILURE 1
 
-#define TX_SLEEP_TIME_MS 1000
+#define TX_SLEEP_TIME_MS 500
 #define RX_SLEEP_TIME_MS 1000
 
 #define POLL_MSG 0x123456789A
@@ -102,8 +102,8 @@
 #define SYS_STATUS_RXFCG (1 << 14)
 #define SYS_STATUS_LDE_DONE (1 << 10)
 
-#define DWT_TIME_UNITS (1.0 / (499.2e6 * 128.0)) // ≈ 15.65e-12
-#define SPEED_OF_LIGHT 299702547.0               // meters per second
+#define DWT_TIME_UNITS (1.0 / 499.2e6 / 128.0) //!< = 15.65e-12 s
+#define SPEED_OF_LIGHT 299702547.0             // meters per second
 
 #define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
 
@@ -233,14 +233,21 @@
 #define SYS_CTRL_TXDLYS 0x00000004UL /* Transmitter Delayed Sending (initiates sending when SYS_TIME == TXD_TIME */
 #define SYS_STATUS_TXERR (0x0408)    /* These bits are the 16 high bits of status register TXPUTE and HPDWARN flags */
 
-#define TX_ANT_DLY 16436
-#define RX_ANT_DLY 16436
+#define TX_ANT_DLY 16601
+#define RX_ANT_DLY 16601
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 140
 /* Receive response timeout. See NOTE 5 below. */
-#define RESP_RX_TIMEOUT_UUS 510
+#define RESP_RX_TIMEOUT_UUS 1000
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_RX_TO_RESP_TX_DLY_UUS 630
 #define UUS_TO_DWT_TIME 65536
+
+#define DRX_CARRIER_INT_OFFSET 0x28
+#define DRX_CARRIER_INT_LEN (3)
+#define DRX_CARRIER_INT_MASK 0x001FFFFF
+
+#define B20_SIGN_EXTEND_TEST (0x00100000UL)
+#define B20_SIGN_EXTEND_MASK (0xFFF00000UL)

@@ -24,3 +24,7 @@ void set_rx_after_tx_delay(uint32_t rxDelayTime);
 void set_rx_timeout(uint16_t time);
 
 void set_delayed_trx_time(uint32_t starttime);
+
+int32_t read_carrier_integrator(void);
+
+double compute_distance_rep(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);

@@ -40,7 +40,7 @@ int check_devices_ready()
         LOG_ERR("Failed to configure CS GPIO: %d", ret);
         return 1;
     }
-    LOG_INF("CS GPIO configured...");
+    // LOG_INF("CS GPIO configured...");
 
     return 0;
 }

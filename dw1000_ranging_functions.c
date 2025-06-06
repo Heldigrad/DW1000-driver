@@ -53,8 +53,8 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     }
     else
     {
-        LOG_INF("Errors encountered!");
-        print_enabled_bits(status_reg);
+        // LOG_INF("Errors encountered!");
+        //  print_enabled_bits(status_reg);
 
         /* Clear RX error events in the DW1000 status register. */
         dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
@@ -99,6 +99,46 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
 
         return FAILURE;
     }
+}
+
+int32_t read_carrier_integrator(void)
+{
+    uint32_t regval = 0;
+    int j;
+    uint8_t buffer[DRX_CARRIER_INT_LEN];
+
+    /* Read 3 bytes into buffer (21-bit quantity) */
+    dw1000_subread(DRX_CONF, DRX_CARRIER_INT_OFFSET, buffer, DRX_CARRIER_INT_LEN);
+
+    for (j = 2; j >= 0; j--) // arrange the three bytes into an unsigned integer value
+    {
+        regval = (regval << 8) + buffer[j];
+    }
+
+    if (regval & B20_SIGN_EXTEND_TEST)
+        regval |= B20_SIGN_EXTEND_MASK; // sign extend bit #20 to whole word
+    else
+        regval &= DRX_CARRIER_INT_MASK; // make sure upper bits are clear if not sign extending
+
+    return (int32_t)regval; // cast unsigned value to signed quantity.
+}
+
+double compute_distance_rep(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
+{
+    float clockOffsetRatio;
+    uint64_t Tround, Treply, Tof;
+    double distance;
+
+    clockOffsetRatio = read_carrier_integrator();
+
+    Tround = T4 - T1;
+    Treply = T3 - T2;
+
+    Tof = ((Tround - Treply * (1 - clockOffsetRatio)) / 2.0f) * (float)DWT_TIME_UNITS;
+
+    distance = Tof * SPEED_OF_LIGHT;
+
+    return distance;
 }
 
 double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
