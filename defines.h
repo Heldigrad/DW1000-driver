@@ -1,80 +1,145 @@
 #pragma once
 
+// *******************************
+//       SPI Configuration
+// *******************************
+#define DW1000_SPI_FREQUENCY 2000000                    // 2 MHz
+#define DW1000_SPI_MODE (SPI_MODE_CPOL | SPI_MODE_CPHA) // SPI Mode 0 (CPOL = 0, CPHA = 0)
+#define SPIOP SPI_WORD_SET(8) | SPI_TRANSFER_MSB
+// *******************************
+
+// *******************************
+//          REGISTERS
+// *******************************
+#define DEV_ID 0x00     // Device Identifier
+#define SYS_CFG 0x04    // System Configuration bitmap
+#define SYS_TIME 0x06   // System Time Counter (40-bit)
+#define TX_FCTRL 0x08   // Transmit Frame Control
+#define TX_BUFFER 0x09  // Transmit Data Buffer
+#define DX_TIME 0x0A    // Delayed Send or Receive Time (40-bit)
+#define RX_FWTO 0x0C    // Receive Frame Wait Timeout Period
+#define SYS_CTRL 0x0D   // System Control Register
+#define SYS_MASK 0x0E   // System Event Mask Register
+#define SYS_STATUS 0x0F // System Event Status Register
+#define RX_FINFO 0x10   // RX Frame Information
+#define RX_BUFFER 0x11  // Receive Data Buffer
+#define RX_TIME 0x15    // Receive Message Time of Arrival
+#define TX_TIME 0x17    // Transmit Message Time of Sending
+#define TX_ANTD 0x18    // 16-bit Delay from Transmit to Antenna
+#define ACK_RESP_T 0x1A // Acknowledgement Time and Response Time
+#define TX_POWER 0x1E   // TX Power Control
+#define CHAN_CTRL 0x1F  // Channel Control
+#define USR_SFD 0x21    // User-specified short/long TX/RX SFD sequences
+#define AGC_CTRL 0x23   // Automatic Gain Control configuration
+#define EXT_SYNC 0x24   // External synchronisation control
+#define DRX_CONF 0x27   // Digital Receiver configuration
+#define RF_CONF 0x28    // Analog RF Configuration
+#define TC 0x2A         // Transmitter Calibration block
+#define FS_CTRL 0x2B    // Frequency synthesiser control block
+#define AON 0x2C        // Always-On register set
+#define OTP_IF 0x2D     // One Time Programmable Memory Interface
+#define LDE_IF 0x2E     // Leading Edge Detection Interface
+#define PMSC 0x36       // Power Management System Control Block
+// *******************************
+
+// *******************************
+//         SUBREGISTERS
+// *******************************
+// AON (0x2C) sub-registers
+#define AON_CTRL 0x02 // AON Control Register
+
+// OTP_IF (0x2D) sub-registers
+#define OTP_CTRL 0x06 // OTP Control
+
+// PMSC(0x36) sub-registers
+#define PMSC_CTRL0 0x00 // PMSC Control Register 0
+
+// FS_CTRL (0x2B) sub-registers
+#define FS_PLLCFG 0x07  // Frequency synthesiser – PLL configuration
+#define FS_PLLTUNE 0x0B // Frequency synthesiser – PLL Tuning
+#define FS_XTALT 0x0E   // Frequency synthesiser – Crystal trim
+
+// RF_CONF (0x28) sub-registers
+#define RF_RXCTRLH 0x0B // Analog RX Control Register
+#define RF_TXCTRL 0x0C  // Analog TX Control Register
+
+// DRX_CONF (0x27) sub-registers
+#define DRX_TUNE0b 0x02 // Digital Tuning Register 0b
+#define DRX_TUNE1a 0x04 // Digital Tuning Register 1a
+#define DRX_TUNE1b 0x06 // Digital Tuning Register 1b
+#define DRX_TUNE2 0x08  // Digital Tuning Register 2
+#define DRX_SFDTOC 0x20 // SFD timeout
+#define DRX_PRETOC 0x24 // Preamble detection timeout
+#define DRX_TUNE4H 0x26 // Digital Tuning Register 4H
+
+// TC (0x2A) sub-registers
+#define TC_PGDELAY 0x0B // Transmitter Calibration – Pulse Generator Delay
+
+// AGC_CTRL (0x23) sub-registers
+#define AGC_TUNE1 0x04 // AGC Tuning register 1
+#define AGC_TUNE2 0x0C // AGC Tuning register 2
+#define AGC_TUNE3 0x12 // AGC Tuning register 3
+
+// LDE_IF (0x2E) sub-registers
+#define LDE_THRESH 0x0000 // LDE Threshold report
+#define LDE_RXANTD 0x1804 // LDE Receive Antenna Delay configuration
+#define LDE_CFG2 0x1806   // LDE Configuration Register 2
+
+// PMSC (0x36) sub-registers
+#define PMSC_CTRL1 0x04 // PMSC Control Register 1
+// *********************
+
+// *******************************
+//      SYS_STATUS BITS
+// *******************************
+#define SYS_STATUS_CPLOCK (1 << 1)     // Clock PLL Lock
+#define SYS_STATUS_TXPUTE (1 << 2)     // TXPUTE - Transmit power up time error
+#define SYS_STATUS_TXFRB (1 << 4)      // TXFRB - Transmit Frame Begins
+#define SYS_STATUS_TXPRS (1 << 5)      // TXPRS - Transmit Preamble Sent
+#define SYS_STATUS_TXPHS (1 << 6)      // TXPHS - Transmit PHY Header Sent
+#define SYS_STATUS_TXFRS (1 << 7)      // TXFRS - Transmit Frame Sent
+#define SYS_STATUS_LDEDONE (1 << 10)   // LDE processing done
+#define SYS_STATUS_RXPHE (1 << 12)     // Receiver PHY Header Error
+#define SYS_STATUS_RXDFR (1 << 13)     // Receiver Data Frame Ready
+#define SYS_STATUS_RXFCG (1 << 14)     // Receiver FCS Good
+#define SYS_STATUS_RXFCE (1 << 15)     // Receiver FCS Error
+#define SYS_STATUS_RXRFSL (1 << 16)    // Receiver Reed Solomon Frame Sync Loss
+#define SYS_STATUS_RXRFTO (1 << 17)    // Receive Frame Wait Timeout
+#define SYS_STATUS_LDEERR (1 << 18)    // Leading edge detection processing error
+#define SYS_STATUS_RXPTO (1 << 21)     // Preamble detection timeout
+#define SYS_STATUS_SLP2INIT (1 << 23)  // SLEEP to INIT
+#define SYS_STATUS_CLKPLL_LL (1 << 25) // Clock PLL Losing Lock
+#define SYS_STATUS_RXSFDTO (1 << 26)   // Receive SFD timeout
+#define SYS_STATUS_TXBERR (1 << 28)    // TXBERR - Transmit Buffer Error
+#define SYS_STATUS_AFFREJ (1 << 29)    // Automatic Frame Filtering rejection
+
+// SYS_STATUS RX good bits
+#define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG | SYS_STATUS_LDEDONE)
+
+// SYS_STATUS RX error bits
+#define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE |    \
+                               SYS_STATUS_RXRFSL | SYS_STATUS_RXRFTO |  \
+                               SYS_STATUS_LDEERR | SYS_STATUS_RXPTO |   \
+                               SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | \
+                               SYS_STATUS_CLKPLL_LL)
+
+// SYS_STATUS TX good bits
+#define SYS_STATUS_TX_OK (SYS_STATUS_TXFRB | SYS_STATUS_TXPRS | \
+                          SYS_STATUS_TXPHS | SYS_STATUS_TXFRS)
+
+// SYS_STATUS TX error bits
+#define SYS_STATUS_ALL_TX_ERR (SYS_STATUS_TXPUTE | SYS_STATUS_TXBERR)
+
+// *******************************
+
 #define SUCCESS 0
 #define FAILURE 1
 
 #define TX_SLEEP_TIME_MS 500
-#define RX_SLEEP_TIME_MS 1000
+#define RX_SLEEP_TIME_MS 500
 
-#define POLL_MSG 0x123456789A
-
-// SPI Configuration
-#define DW1000_SPI_FREQUENCY 2000000                    // 2 MHz
-#define DW1000_SPI_MODE (SPI_MODE_CPOL | SPI_MODE_CPHA) // SPI Mode 0 (CPOL = 0, CPHA = 0)
-#define SPIOP SPI_WORD_SET(8) | SPI_TRANSFER_MSB
-
-// REGISTERS
-#define DEV_ID 0x00
-#define SYS_CFG 0x04
-#define TX_BUFFER 0x09
-#define SYS_CTRL 0x0D
-#define SYS_STATUS 0x0F
-#define AON 0x2C
-#define AON_CTRL 0x02
-#define PANADR 0x03
-#define RX_BUFFER 0x11
-#define CHAN_CTRL 0x1F
-#define SYS_MASK 0x0E
-#define PMSC 0x36
-#define AON_ID 0x2C
-#define OTP_MEM 0x2D
-#define OTP_IF 0x2D
-#define PMSC_CTRL0 0x00
-#define OTP_CTRL 0x06
-#define TX_FCTRL 0x08
-#define FS_CTRL 0x2B
-#define FS_PLLTUNE 0x0B
-#define FS_XTALT 0x0E
-#define TX_TIME 0x17
-#define RX_TIME 0x15
-#define RX_FWTO 0x0C
-#define RF_CONF 0x28
-#define RF_RXCTRLH 0x0B
-#define RF_TXCTRL 0x0C
-#define DRX_CONF 0x27
-#define DRX_TUNE0b 0x02
-#define DRX_TUNE1a 0x04
-#define DRX_TUNE1b 0x06
-#define DRX_TUNE2 0x08
-#define DRX_TUNE4H 0x26
-#define SYS_TIME 0x06
-#define RX_FINFO 0x10
-#define DX_TIME 0x0A
-#define TX_POWER 0x1E
-#define TC 0x2A
-#define TC_PGDELAY 0x0B
-#define FS_PLLCFG 0x07
-#define AGC_CTRL 0x23
-#define AGC_TUNE1 0x04
-#define AGC_TUNE2 0x0C
-#define AGC_TUNE3 0x12
-#define LDE_IF 0x2E
-#define LDE_RXANTD 0x1804
-#define TX_ANTD 0x18
-#define LDE_CFG2 0x1806
-#define LDE_THRESH 0x0000
-#define DRX_SFDTOC 0x20
-#define DRX_PRETOC 0x24
-#define EXT_SYNC_ID 0x24
-#define OTP_IF 0x2D
-#define FS_CTRL_ID 0x2B
-#define PMSC_CTRL1 0x04
-#define USR_SFD 0x21
-#define OTP_CTRL 0x06
-#define SYS_CTRL_TRXOFF 0x00000040
-#define SYS_CTRL_SFTRST 0x00000001
+// OTHER STUFF
 #define PMSC_CTRL0_SOFTRESET 0x00
-#define ACK_RESP_T 0x1A
 #define SOFTRESET_RX_BIT (1 << 28)
 
 #define ACK_RESP_T_W4R_TIM_MASK 0x000FFFFFUL /* Wait-for-Response turn-around Time 20 bit field */
@@ -88,49 +153,10 @@
 #define SYS_CTRL_RXENAB 0x00000100UL  /* Enable Receiver Now */
 #define SYS_CTRL_TXSTRT 0x00000002UL  /* Start Transmitting Now */
 
-// SYS STATUS RX BITS
-#define SYS_STATUS_RXPHE (1 << 12)   // Receiver PHY Header Error
-#define SYS_STATUS_RXFCE (1 << 15)   // Receiver FCS Error
-#define SYS_STATUS_RXRFSL (1 << 16)  // Receiver Reed Solomon Frame Sync Loss
-#define SYS_STATUS_RXRFTO (1 << 17)  // Receive Frame Wait Timeout
-#define SYS_STATUS_LDEERR (1 << 18)  // Leading edge detection processing error
-#define SYS_STATUS_RXPTO (1 << 21)   // Preamble detection timeout
-#define SYS_STATUS_RXSFDTO (1 << 26) // Receive SFD timeout
-#define SYS_STATUS_AFFREJ (1 << 29)  // Automatic Frame Filtering rejection
-#define SYS_STATUS_LDEDONE (1 << 10)
-#define SYS_STATUS_RXDFR (1 << 13)
-#define SYS_STATUS_RXFCG (1 << 14)
-#define SYS_STATUS_LDE_DONE (1 << 10)
-
 #define DWT_TIME_UNITS (1.0 / 499.2e6 / 128.0) //!< = 15.65e-12 s
 #define SPEED_OF_LIGHT 299702547.0             // meters per second
 
-#define SYS_STATUS_RX_OK (SYS_STATUS_RXDFR | SYS_STATUS_RXFCG)
-
-#define SYS_STATUS_ALL_RX_ERR (SYS_STATUS_RXPHE | SYS_STATUS_RXFCE |   \
-                               SYS_STATUS_RXRFSL | SYS_STATUS_RXRFTO | \
-                               SYS_STATUS_LDEERR | SYS_STATUS_RXPTO |  \
-                               SYS_STATUS_RXSFDTO | SYS_STATUS_AFFREJ | SYS_STATUS_CLKPLL_LL)
-
-// SYS STATUS BITS
-#define SYS_STATUS_SLP2INIT (1 << 23)  // SLEEP to INIT
-#define SYS_STATUS_CPLOCK (1 << 1)     // Clock PLL Lock
-#define SYS_STATUS_CLKPLL_LL (1 << 25) // Clock PLL Losing Lock
-#define SYS_STATUS_CLEAR_OTHERS (SYS_STATUS_SLP2INIT | SYS_STATUS_CPLOCK)
-
-// SYS STATUS TX BITS
-#define SYS_STATUS_TXFRB (1 << 4) // TXFRB - Transmit Frame Begins
-#define SYS_STATUS_TXPRS (1 << 5) // TXPRS - Transmit Preamble Sent
-#define SYS_STATUS_TXPHS (1 << 6) // TXPHS - Transmit PHY Header Sent
-#define SYS_STATUS_TXFRS (1 << 7) // TXFRS - Transmit Frame Sent
-
 #define SYS_CFG_RXWTOE 0x10000000UL /* Receive Wait Timeout Enable. */
-#define SYS_STATUS_TXBERR (1 << 28) // TXBERR - Transmit Buffer Error
-#define SYS_STATUS_TXPUTE (1 << 2)  // TXPUTE - Transmit power up time error
-
-#define SYS_STATUS_TX_OK (SYS_STATUS_TXFRB | SYS_STATUS_TXPRS | \
-                          SYS_STATUS_TXPHS | SYS_STATUS_TXFRS)
-#define SYS_STATUS_ALL_TX_ERR (SYS_STATUS_TXPUTE | SYS_STATUS_TXBERR)
 
 //! constants for specifying the (Nominal) mean Pulse Repetition Frequency
 //! These are defined for direct write (with a shift if necessary) to CHAN_CTRL and TX_FCTRL regs
