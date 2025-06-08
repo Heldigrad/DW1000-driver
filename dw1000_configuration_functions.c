@@ -52,10 +52,10 @@ void bip_init()
     dw1000_subwrite_u16(0x36, 0x04, 0x00);
 
     // new_softreset();
-    dw1000_subwrite_u16(AON_ID, 0x00, 0x00);
-    dw1000_subwrite_u8(AON_ID, 0x06, 0x00);
-    dw1000_subwrite_u8(AON_ID, 0x02, 0x00);
-    dw1000_subwrite_u8(AON_ID, 0x02, 0x02);
+    dw1000_subwrite_u16(AON, 0x00, 0x00);
+    dw1000_subwrite_u8(AON, 0x06, 0x00);
+    dw1000_subwrite_u8(AON, 0x02, 0x00);
+    dw1000_subwrite_u8(AON, 0x02, 0x02);
     dw1000_subwrite_u8(PMSC, 3, 0x00);
     k_msleep(10);
     dw1000_subwrite_u8(PMSC, 3, 0xF0);
@@ -66,7 +66,7 @@ void bip_init()
     dw1000_subwrite_u8(PMSC, 0x1, 0x00);
     // - new_enable_clocks(0);
 
-    dw1000_write_u8(EXT_SYNC_ID, 0x04);
+    dw1000_write_u8(EXT_SYNC, 0x04);
 
     // uint32_t ldo_tune = new_otp_read(0x04);
     dw1000_subwrite_u16(OTP_IF, 0x04, 0x0004);
@@ -81,7 +81,7 @@ void bip_init()
     // - uint16_t otp_xtaltrim_and_rev = new_otp_read(0x1E) & 0xffff;
 
     // new_setxtaltrim((uint8_t)otp_xtaltrim_and_rev);
-    dw1000_subwrite_u8(FS_CTRL_ID, 0x0E, 0x70);
+    dw1000_subwrite_u8(FS_CTRL, 0x0E, 0x70);
     // - new_setxtaltrim((uint8_t)otp_xtaltrim_and_rev);
 
     dw1000_write_u8(0x36, 0x01);
@@ -93,7 +93,7 @@ void bip_init()
     dw1000_write_u8(0x36, 0x00);
     dw1000_subwrite_u8(0x36, 0x01, 0x00);
 
-    dw1000_subwrite_u8(AON_ID, 0x0A, 0x00);
+    dw1000_subwrite_u8(AON, 0x0A, 0x00);
 }
 
 void bip_config()
@@ -107,8 +107,8 @@ void bip_config()
     dw1000_subwrite_u16(LDE_IF, 0x1806, (uint16_t)0x0607);
     // - new_configlde(prfIndex);
 
-    dw1000_subwrite_u32(FS_CTRL_ID, 0x07, 0x0800041D);
-    dw1000_subwrite_u8(FS_CTRL_ID, 0x0B, 0xBE);
+    dw1000_subwrite_u32(FS_CTRL, 0x07, 0x0800041D);
+    dw1000_subwrite_u8(FS_CTRL, 0x0B, 0xBE);
     dw1000_subwrite_u8(RF_CONF, 0x0B, 0xD8);
 
     dw1000_subwrite_u32(RF_CONF, 0x0C, 0x001E3FE0);

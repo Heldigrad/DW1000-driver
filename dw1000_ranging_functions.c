@@ -54,7 +54,7 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     else
     {
         // LOG_INF("Errors encountered!");
-        //  print_enabled_bits(status_reg);
+        print_enabled_bits(status_reg);
 
         /* Clear RX error events in the DW1000 status register. */
         dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
@@ -212,5 +212,190 @@ void set_rx_timeout(uint16_t time)
 void set_delayed_trx_time(uint32_t starttime)
 {
     dw1000_subwrite_u32(DX_TIME, 1, starttime); // Write at offset 1 as the lower 9 bits of this register are ignored
+}
 
-} // end dwt_setdelayedtrxtime()
+uint64_t send_poll_message(uint8_t src_id, uint8_t dest_id)
+{
+    uint64_t tx_timestamp;
+    uint32_t poll = ((uint32_t)POLL_MSG_TYPE << 24) |
+                    ((uint32_t)src_id << 8) |
+                    ((uint32_t)dest_id);
+
+    transmit(poll, 4, &tx_timestamp);
+
+    return tx_timestamp;
+}
+
+int get_poll_message(uint8_t src_id, uint8_t dest_id, uint64_t *timestamp)
+{
+    int res;
+    uint8_t frame_len;
+    uint32_t message = 0;
+    res = receive(&message, timestamp);
+
+    dw1000_subread_u8(RX_FINFO, 0x00, &frame_len); // Check frame length -> should be 12
+    if (frame_len > 8)
+    {
+        return FAILURE;
+    }
+
+    return res;
+    // LOG_INF("Received poll message = %0llX", message);
+
+    uint8_t msg_type = (message >> 24) & 0xFF;
+    uint8_t msg_src_id = (message >> 8) & 0xFF;
+    uint8_t msg_dest_id = message & 0xFF;
+
+    // return (msg_type == POLL_MSG_TYPE) &&
+    //        (msg_dest_id == dest_id) &&
+    //        (msg_src_id == src_id);
+
+    return (msg_type == POLL_MSG_TYPE);
+}
+
+uint64_t send_resp_message(uint8_t src_id, uint8_t dest_id)
+{
+    uint64_t tx_timestamp;
+    uint32_t resp = ((uint32_t)RESP_MSG_TYPE << 24) |
+                    ((uint32_t)src_id << 8) |
+                    ((uint32_t)dest_id);
+
+    transmit(resp, 4, &tx_timestamp);
+    return tx_timestamp;
+}
+
+int get_resp_message(uint8_t src_id, uint8_t my_id, uint64_t *timestamp)
+{
+    uint32_t message;
+    return receive(&message, timestamp);
+
+    // uint8_t msg_type = (message >> 24) & 0xFF;
+    // uint8_t msg_src_id = (message >> 8) & 0xFF;
+    // uint8_t msg_dest_id = message & 0xFF;
+
+    // // return (msg_type == RESP_MSG_TYPE);
+    // return SUCCESS;
+}
+
+int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4)
+{
+    dw1000_subwrite_u8(TX_BUFFER, 0x07, FINAL_MSG_TYPE);
+    dw1000_subwrite_u8(TX_BUFFER, 0x06, Dev_id);
+    dw1000_subwrite_u40(TX_BUFFER, 0x05, T1);
+    dw1000_subwrite_u40(TX_BUFFER, 0x00, T4);
+
+    new_set_txfctrl(12); // 12 bytes: 2x5 bytes (timestamps) + dev_id + message_type
+
+    new_tx_start(0);
+
+    uint32_t status;
+    do
+    {
+        dw1000_read_u32(SYS_STATUS, &status);
+    } while (!(status & SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR));
+
+    if (!(status & SYS_STATUS_ALL_TX_ERR))
+    {
+        /* Clear TX frame sent event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK);
+
+        return SUCCESS;
+    }
+    else
+    {
+        /* Clear TX error event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK | SYS_STATUS_ALL_TX_ERR);
+
+        return FAILURE;
+    }
+}
+
+int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
+{
+    uint32_t status_reg;
+    uint8_t src_dev_id, msg_type, frame_len;
+    new_rx_enable(0);
+
+    do
+    {
+        dw1000_read_u32(SYS_STATUS, &status_reg);
+    } while (!(status_reg & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)));
+
+    if (!(status_reg & SYS_STATUS_ALL_RX_ERR) && (status_reg & SYS_STATUS_RXFCG))
+    {
+
+        dw1000_subread_u8(RX_FINFO, 0x00, &frame_len); // Check frame length -> should be 12
+        if (frame_len < 12)
+        {
+            return FAILURE;
+        }
+
+        dw1000_subread_u8(RX_BUFFER, 0x06, &src_dev_id);
+        dw1000_subread_u40(RX_BUFFER, 0x05, T1);
+        dw1000_subread_u40(RX_BUFFER, 0x00, T4);
+
+        /* Clear good RX frame event in the DW1000 status register. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_RXFCG);
+
+        return SUCCESS;
+    }
+    else
+    {
+        /* Clear RX error events in the DW1000 status register. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
+        rx_soft_reset();
+        return FAILURE;
+    }
+}
+
+int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4)
+{
+    uint32_t status_reg;
+    uint8_t src_dev_id, msg_type, frame_len;
+    // uint64_t T1 = 0, T2 = 0, T3 = 0, T4 = 0;
+
+    dw1000_write_u32(SYS_STATUS, 0xFFFFFFFF);
+
+    if (*T2 == 0 || *T3 == 0)
+    {
+        LOG_INF("Waiting for poll.");
+    }
+    if (*T1 == 0 || *T4 == 0)
+    {
+        LOG_INF("Waiting for TS");
+    }
+
+    new_rx_enable(0);
+
+    do
+    {
+        dw1000_read_u32(SYS_STATUS, &status_reg);
+    } while (!(status_reg & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)));
+
+    if (!(status_reg & SYS_STATUS_ALL_RX_ERR) && (status_reg & SYS_STATUS_RXFCG))
+    {
+
+        dw1000_subread_u8(RX_FINFO, 0x00, &frame_len); // Check frame length -> should be 12
+        if (frame_len > 10)                            // TS message
+        {
+            dw1000_subread_u8(RX_BUFFER, 0x06, &src_dev_id);
+            dw1000_subread_u40(RX_BUFFER, 0x05, T1);
+            dw1000_subread_u40(RX_BUFFER, 0x00, T4);
+        }
+        else
+        {
+            *T2 = get_rx_timestamp();
+            k_msleep(10);
+            *T3 = send_resp_message(0x01, 0x00);
+        }
+
+        /* Clear good RX frame event in the DW1000 status register. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_RXFCG);
+    }
+    else
+    {
+        /* Clear RX error events in the DW1000 status register. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
+        rx_soft_reset();
+    }
+}

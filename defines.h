@@ -277,3 +277,9 @@
 
 #define B20_SIGN_EXTEND_TEST (0x00100000UL)
 #define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
+
+#define POLL_MSG_TYPE 0xC5  // Custom type for poll message
+#define RESP_MSG_TYPE 0xC6  // Distinct from POLL_MSG_TYPE
+#define FINAL_MSG_TYPE 0xC7 // Unique type for final message
+
+#define POLL_MSG_LEN 4 // 1 byte type + 2 + 2 + 2
