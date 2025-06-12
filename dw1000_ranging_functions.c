@@ -54,7 +54,7 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     else
     {
         // LOG_INF("Errors encountered!");
-        print_enabled_bits(status_reg);
+        // print_enabled_bits(status_reg);
 
         /* Clear RX error events in the DW1000 status register. */
         dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
@@ -351,19 +351,7 @@ int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
 int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4)
 {
     uint32_t status_reg;
-    uint8_t src_dev_id, msg_type, frame_len;
-    // uint64_t T1 = 0, T2 = 0, T3 = 0, T4 = 0;
-
-    dw1000_write_u32(SYS_STATUS, 0xFFFFFFFF);
-
-    if (*T2 == 0 || *T3 == 0)
-    {
-        LOG_INF("Waiting for poll.");
-    }
-    if (*T1 == 0 || *T4 == 0)
-    {
-        LOG_INF("Waiting for TS");
-    }
+    uint8_t src_dev_id, frame_len;
 
     new_rx_enable(0);
 
@@ -374,18 +362,20 @@ int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4)
 
     if (!(status_reg & SYS_STATUS_ALL_RX_ERR) && (status_reg & SYS_STATUS_RXFCG))
     {
-
+        // LOG_INF("Received message:");
         dw1000_subread_u8(RX_FINFO, 0x00, &frame_len); // Check frame length -> should be 12
         if (frame_len > 10)                            // TS message
         {
             dw1000_subread_u8(RX_BUFFER, 0x06, &src_dev_id);
             dw1000_subread_u40(RX_BUFFER, 0x05, T1);
             dw1000_subread_u40(RX_BUFFER, 0x00, T4);
+            // LOG_INF("TS");
         }
         else
         {
             *T2 = get_rx_timestamp();
             k_msleep(10);
+            // LOG_INF("POLL");
             *T3 = send_resp_message(0x01, 0x00);
         }
 
