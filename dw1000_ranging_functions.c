@@ -156,7 +156,7 @@ double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
     if (T3 < T2)
     {
         // wrap-around correction (max 32-bit value is 0xFFFFFFFF)
-        Tround = (uint64_t)(T3 + (1ULL << 32)) - T2;
+        Treply = (uint64_t)(T3 + (1ULL << 32)) - T2;
     }
     else
     {
@@ -264,12 +264,29 @@ uint64_t send_resp_message(uint8_t src_id, uint8_t dest_id)
     return tx_timestamp;
 }
 
+uint8_t get_rx_frame_len()
+{
+    uint8_t frame_len;
+    dw1000_subread_u8(RX_FINFO, 0x00, &frame_len);
+    return frame_len & 0x7F;
+}
+
 int get_resp_message(uint8_t src_id, uint8_t my_id, uint64_t *timestamp)
 {
-    uint32_t message;
-    return receive(&message, timestamp);
+    uint64_t message;
+    int ret = receive(&message, timestamp);
 
-    // uint8_t msg_type = (message >> 24) & 0xFF;
+    if (ret == SUCCESS)
+    {
+        uint8_t msg_type = (message >> 24) & 0xFF;
+
+        if (msg_type != RESP_MSG_TYPE)
+        {
+            LOG_INF("Distance = %0f", message);
+        }
+    }
+
+    return ret;
     // uint8_t msg_src_id = (message >> 8) & 0xFF;
     // uint8_t msg_dest_id = message & 0xFF;
 
@@ -388,4 +405,45 @@ int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4)
         dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
         rx_soft_reset();
     }
+}
+
+double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
+{
+    // Compute round-trip time and reply time in device time units (DTUs)
+    uint64_t round_trip_time = T4 - T1;
+    uint64_t reply_time = T3 - T2;
+
+    // Time of Flight (DTUs)
+    double tof_dtu = (round_trip_time - reply_time) / 2.0;
+
+    // Convert DTUs to seconds
+    double tof_sec = tof_dtu * DWT_TIME_UNITS;
+
+    // Distance = TOF * speed of light
+    return tof_sec * SPEED_OF_LIGHT;
+}
+
+int compare(const void *a, const void *b)
+{
+    double diff = *(double *)a - *(double *)b;
+    return (diff > 0) - (diff < 0); // compact sign function
+}
+
+double mean_distance(double distances[NR_OF_DISTANCES])
+{
+    // Sort the distances
+    qsort(distances, NR_OF_DISTANCES, sizeof(double), compare);
+
+    // Trim 20% from each end (e.g., 1 high + 1 low if size=10)
+    int trim = NR_OF_DISTANCES / 5;
+    double sum = 0.0;
+    int count = 0;
+
+    for (int i = trim; i < NR_OF_DISTANCES - trim; ++i)
+    {
+        sum += distances[i];
+        count++;
+    }
+
+    return (count > 0) ? (sum / count) : -1.0;
 }

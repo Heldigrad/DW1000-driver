@@ -42,3 +42,11 @@ int send_timestamps(uint8_t msg_id, uint64_t T1, uint64_t T4);
 int get_timestamps(uint8_t msg_id, uint64_t *T1, uint64_t *T4);
 
 int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4);
+
+double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);
+
+int compare(const void *a, const void *b);
+
+double mean_distance(double distances[NR_OF_DISTANCES]);
+
+uint8_t get_rx_frame_len();
