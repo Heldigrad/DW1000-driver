@@ -33,7 +33,7 @@ uint64_t send_poll_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
 
 uint64_t send_resp_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
 
-int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t *timestamp);
+int get_resp_message(uint8_t my_id, uint8_t Src_id, uint8_t message_id, uint64_t *timestamp, double *distance);
 
 int send_timestamps(uint8_t My_id, uint8_t dest_id, uint64_t T1, uint64_t T4, uint8_t message_id);
 

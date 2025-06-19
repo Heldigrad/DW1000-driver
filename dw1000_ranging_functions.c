@@ -273,7 +273,7 @@ uint8_t get_rx_frame_len()
     return frame_len & 0x7F;
 }
 
-int get_resp_message(uint8_t my_id, uint8_t src_id, uint8_t message_id, uint64_t *timestamp)
+int get_resp_message(uint8_t my_id, uint8_t Src_id, uint8_t message_id, uint64_t *timestamp, double *distance)
 {
     uint64_t message;
     int ret = receive(&message, timestamp);
@@ -287,7 +287,7 @@ int get_resp_message(uint8_t my_id, uint8_t src_id, uint8_t message_id, uint64_t
             uint8_t rec_src_id = (message >> 16) & 0xFF;
             uint8_t dest_id = (message >> 8) & 0xFF;
 
-            if (rec_src_id == src_id && dest_id == my_id)
+            if (rec_src_id == Src_id && dest_id == my_id)
             {
                 uint8_t msg_id = (message) & 0xFF;
                 if (msg_id != message_id)
@@ -308,8 +308,6 @@ int get_resp_message(uint8_t my_id, uint8_t src_id, uint8_t message_id, uint64_t
                 uint32_t distance_mm = message & 0xFFFFFFFF;
 
                 double distance = (double)distance_mm / 1000.0; // convert to m
-
-                LOG_INF("Distance = %0.2fm", distance);
             }
 
             return FAILURE; // so that the timestamp isn't used in ranging
