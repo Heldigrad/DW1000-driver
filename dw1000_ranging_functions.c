@@ -75,7 +75,7 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
     do
     {
         dw1000_read_u32(SYS_STATUS, &status);
-    } while (!(status & SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR));
+    } while (!(status & (SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR)));
 
     if (!(status & SYS_STATUS_ALL_TX_ERR))
     {
@@ -230,7 +230,7 @@ int get_poll_message(uint8_t src_id, uint8_t dest_id, uint64_t *timestamp)
 {
     int res;
     uint8_t frame_len;
-    uint32_t message = 0;
+    uint64_t message = 0;
     res = receive(&message, timestamp);
 
     dw1000_subread_u8(RX_FINFO, 0x00,
@@ -244,8 +244,8 @@ int get_poll_message(uint8_t src_id, uint8_t dest_id, uint64_t *timestamp)
     // LOG_INF("Received poll message = %0llX", message);
 
     uint8_t msg_type = (message >> 24) & 0xFF;
-    uint8_t msg_src_id = (message >> 8) & 0xFF;
-    uint8_t msg_dest_id = message & 0xFF;
+    // uint8_t msg_src_id = (message >> 8) & 0xFF;
+    // uint8_t msg_dest_id = message & 0xFF;
 
     // return (msg_type == POLL_MSG_TYPE) &&
     //        (msg_dest_id == dest_id) &&
@@ -283,12 +283,25 @@ int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t
         uint8_t msg_type = (message >> 24) & 0xFF;
         uint8_t msg_id = (message) & 0xFF;
 
-        if (msg_id != message_id)
+        if (msg_type == RESP_MSG_TYPE)
         {
-            if (INFO_LOGS_EN)
+            if (msg_id != message_id)
             {
-                LOG_INF("Expected resp: %0d, received: %0d", message_id, msg_id);
+                if (INFO_LOGS_EN)
+                {
+                    LOG_INF("Expected resp: %0d, received: %0d", message_id, msg_id);
+                }
+                return FAILURE;
             }
+        }
+        else
+        {
+            uint32_t distance_mm = message & 0xFFFFFFFF;
+
+            double distance = (double)distance_mm / 1000.0; // convert to m
+
+            LOG_INF("Distance = %0f", distance);
+
             return FAILURE;
         }
     }
@@ -298,7 +311,7 @@ int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t
 
 int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4, uint8_t dest_id, uint8_t message_id)
 {
-    dw1000_subwrite_u8(TX_BUFFER, 0x0D, FINAL_MSG_TYPE);
+    dw1000_subwrite_u8(TX_BUFFER, 0x0D, TS_MSG_TYPE);
     dw1000_subwrite_u8(TX_BUFFER, 0x0C, Dev_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x0B, dest_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x0A, message_id);
@@ -313,7 +326,7 @@ int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4, uint8_t dest_id, u
     do
     {
         dw1000_read_u32(SYS_STATUS, &status);
-    } while (!(status & SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR));
+    } while (!(status & (SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR)));
 
     if (!(status & SYS_STATUS_ALL_TX_ERR))
     {
@@ -334,7 +347,7 @@ int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4, uint8_t dest_id, u
 int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
 {
     uint32_t status_reg;
-    uint8_t src_dev_id, msg_type, frame_len;
+    uint8_t src_dev_id, frame_len;
     new_rx_enable(0);
 
     do
@@ -369,7 +382,7 @@ int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
     }
 }
 
-int get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id)
+void get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id)
 {
     uint32_t status_reg, buffer;
     uint8_t msg_id, frame_len;
@@ -452,4 +465,36 @@ double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T
     double tof_dtu = (double)(round_trip_time - reply_time) / 2.0;
     double tof_sec = tof_dtu * DWT_TIME_UNITS;
     return tof_sec * SPEED_OF_LIGHT;
+}
+
+int send_distance(uint8_t src_id, uint32_t distance)
+{
+    dw1000_subwrite_u32(TX_BUFFER, 0x00, distance);      // 4 bytes
+    dw1000_subwrite_u32(TX_BUFFER, 0x04, src_id);        // 1 byte
+    dw1000_subwrite_u32(TX_BUFFER, 0x05, DIST_MSG_TYPE); // 1 byte
+
+    new_set_txfctrl(6); // 6 bytes
+
+    new_tx_start(0);
+
+    uint32_t status;
+    do
+    {
+        dw1000_read_u32(SYS_STATUS, &status);
+    } while (!(status & (SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR)));
+
+    if (!(status & SYS_STATUS_ALL_TX_ERR))
+    {
+        /* Clear TX frame sent event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK);
+
+        return SUCCESS;
+    }
+    else
+    {
+        /* Clear TX error event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK | SYS_STATUS_ALL_TX_ERR);
+
+        return FAILURE;
+    }
 }

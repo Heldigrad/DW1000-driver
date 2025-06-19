@@ -95,7 +95,7 @@ int dw1000_write_u64(uint8_t reg, uint64_t value)
     int ret = dw1000_write(reg, buffer, sizeof(buffer));
     if (ret != 0)
     {
-        LOG_ERR("Failed to write 64-bit value 0x%08X to register 0x%X", value, reg);
+        LOG_ERR("Failed to write 64-bit value 0x%0llX to register 0x%0X", value, reg);
     }
     else
     {

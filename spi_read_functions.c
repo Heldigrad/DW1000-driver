@@ -78,9 +78,10 @@ int dw1000_read_u32(uint8_t reg, uint32_t *value)
              ((uint32_t)buffer[1] << 8) |
              buffer[0];
 
-    if (reg != SYS_STATUS)
-        // LOG_INF("32-bit read from 0x%X: 0x%08X", reg, *value);
-        return 0;
+    // if (reg != SYS_STATUS)
+    // LOG_INF("32-bit read from 0x%X: 0x%08X", reg, *value);
+
+    return 0;
 }
 
 int dw1000_read_u64(uint8_t reg, uint64_t *value)
@@ -93,19 +94,19 @@ int dw1000_read_u64(uint8_t reg, uint64_t *value)
         return ret;
     }
 
-    *value = ((uint32_t)buffer[7] << 56) |
-             ((uint32_t)buffer[6] << 48) |
-             ((uint32_t)buffer[5] << 40) |
-             ((uint32_t)buffer[4] << 32) |
-             ((uint32_t)buffer[3] << 24) |
-             ((uint32_t)buffer[2] << 16) |
-             ((uint32_t)buffer[1] << 8) |
-             buffer[0];
+    *value = ((uint64_t)buffer[7] << 56) |
+             ((uint64_t)buffer[6] << 48) |
+             ((uint64_t)buffer[5] << 40) |
+             ((uint64_t)buffer[4] << 32) |
+             ((uint64_t)buffer[3] << 24) |
+             ((uint64_t)buffer[2] << 16) |
+             ((uint64_t)buffer[1] << 8) |
+             ((uint64_t)buffer[0]);
 
-    if (reg != SYS_STATUS)
-        // LOG_INF("64-bit read from 0x%X: 0x%08X", reg, *value);
+    // if (reg != SYS_STATUS)
+    //     LOG_INF("64-bit read from 0x%X: 0x%08X", reg, *value);
 
-        return 0;
+    return 0;
 }
 
 // SPI read sub-addresses
@@ -150,12 +151,6 @@ int dw1000_subread(uint8_t reg, uint16_t subaddr, uint8_t *data, size_t len)
     {
         LOG_ERR("SPI sub-read failed: reg=0x%02X, sub=0x%04X, err=%d", reg, subaddr, ret);
     }
-    // else{
-    //     LOG_INF("Read data from reg %X : %X:", reg, subaddr);
-    //     for(int i = 0; i< len; ++i){
-    //         LOG_INF("Byte[%d] = %X", i, data[i]);
-    //     }
-    // }
 
     return ret;
 }
@@ -182,7 +177,7 @@ int dw1000_subread_u32(uint8_t reg, uint16_t subaddr, uint32_t *value)
     int ret = dw1000_subread(reg, subaddr, buffer, sizeof(buffer));
     if (ret == 0)
     {
-        *value = buffer[0] |
+        *value = ((uint32_t)buffer[0]) |
                  ((uint32_t)buffer[1] << 8) |
                  ((uint32_t)buffer[2] << 16) |
                  ((uint32_t)buffer[3] << 24);
@@ -199,7 +194,7 @@ int dw1000_subread_u40(uint8_t reg, uint8_t subreg, uint64_t *value)
         return ret;
     }
 
-    *value = (uint64_t)buffer[0] |
+    *value = ((uint64_t)buffer[0]) |
              ((uint64_t)buffer[1] << 8) |
              ((uint64_t)buffer[2] << 16) |
              ((uint64_t)buffer[3] << 24) |
@@ -222,9 +217,9 @@ int dw1000_subread_u64(uint8_t reg, uint8_t subreg, uint64_t *value)
              ((uint64_t)buffer[2] << 16) |
              ((uint64_t)buffer[3] << 24) |
              ((uint64_t)buffer[4] << 32) |
-             ((uint32_t)buffer[7] << 56) |
-             ((uint32_t)buffer[6] << 48) |
-             ((uint32_t)buffer[5] << 40);
+             ((uint64_t)buffer[5] << 40) |
+             ((uint64_t)buffer[6] << 48) |
+             ((uint64_t)buffer[7] << 56);
 
     return 0;
 }
