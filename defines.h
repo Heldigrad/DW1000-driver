@@ -289,3 +289,5 @@
 
 #define INFO_LOGS_EN 0
 #define ERR_LOGS_EN 0
+
+#define TAG_ID 0x00

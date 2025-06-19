@@ -35,11 +35,11 @@ uint64_t send_resp_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
 
 int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t *timestamp);
 
-int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4, uint8_t dest_id, uint8_t message_id);
+int send_timestamps(uint8_t My_id, uint8_t dest_id, uint64_t T1, uint64_t T4, uint8_t message_id);
 
 int get_timestamps(uint8_t msg_id, uint64_t *T1, uint64_t *T4);
 
-void get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id);
+void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id);
 
 double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);
 

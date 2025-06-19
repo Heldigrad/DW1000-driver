@@ -273,7 +273,7 @@ uint8_t get_rx_frame_len()
     return frame_len & 0x7F;
 }
 
-int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t *timestamp)
+int get_resp_message(uint8_t my_id, uint8_t src_id, uint8_t message_id, uint64_t *timestamp)
 {
     uint64_t message;
     int ret = receive(&message, timestamp);
@@ -281,39 +281,49 @@ int get_resp_message(uint8_t src_id, uint8_t my_id, uint8_t message_id, uint64_t
     if (ret == SUCCESS)
     {
         uint8_t msg_type = (message >> 24) & 0xFF;
-        uint8_t msg_id = (message) & 0xFF;
 
         if (msg_type == RESP_MSG_TYPE)
         {
-            if (msg_id != message_id)
+            uint8_t rec_src_id = (message >> 16) & 0xFF;
+            uint8_t dest_id = (message >> 8) & 0xFF;
+
+            if (rec_src_id == src_id && dest_id == my_id)
             {
-                if (INFO_LOGS_EN)
+                uint8_t msg_id = (message) & 0xFF;
+                if (msg_id != message_id)
                 {
-                    LOG_INF("Expected resp: %0d, received: %0d", message_id, msg_id);
+                    if (INFO_LOGS_EN)
+                    {
+                        LOG_INF("Expected resp: %0d, received: %0d", message_id, msg_id);
+                    }
+                    return FAILURE;
                 }
-                return FAILURE;
             }
         }
         else
         {
-            uint32_t distance_mm = message & 0xFFFFFFFF;
+            uint8_t src_id = (message >> 16) & 0xFF;
+            if (src_id == src_id)
+            {
+                uint32_t distance_mm = message & 0xFFFFFFFF;
 
-            double distance = (double)distance_mm / 1000.0; // convert to m
+                double distance = (double)distance_mm / 1000.0; // convert to m
 
-            LOG_INF("Distance = %0f", distance);
+                LOG_INF("Distance = %0.2fm", distance);
+            }
 
-            return FAILURE;
+            return FAILURE; // so that the timestamp isn't used in ranging
         }
     }
 
     return ret;
 }
 
-int send_timestamps(uint8_t Dev_id, uint64_t T1, uint64_t T4, uint8_t dest_id, uint8_t message_id)
+int send_timestamps(uint8_t Src_id, uint8_t Dest_id, uint64_t T1, uint64_t T4, uint8_t message_id)
 {
     dw1000_subwrite_u8(TX_BUFFER, 0x0D, TS_MSG_TYPE);
-    dw1000_subwrite_u8(TX_BUFFER, 0x0C, Dev_id);
-    dw1000_subwrite_u8(TX_BUFFER, 0x0B, dest_id);
+    dw1000_subwrite_u8(TX_BUFFER, 0x0C, Src_id);
+    dw1000_subwrite_u8(TX_BUFFER, 0x0B, Dest_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x0A, message_id);
     dw1000_subwrite_u40(TX_BUFFER, 0x05, T1);
     dw1000_subwrite_u40(TX_BUFFER, 0x00, T4);
@@ -382,10 +392,10 @@ int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
     }
 }
 
-void get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id)
+void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id)
 {
     uint32_t status_reg, buffer;
-    uint8_t msg_id, frame_len;
+    uint8_t msg_id, src_id, dest_id, frame_len;
 
     new_rx_enable(0);
 
@@ -400,49 +410,63 @@ void get_msg_from_init(uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, u
 
         if (frame_len > 10) // TS message
         {
+            dw1000_subread_u8(RX_BUFFER, 0x0C, &src_id);
+            dw1000_subread_u8(RX_BUFFER, 0x0B, &dest_id);
             dw1000_subread_u8(RX_BUFFER, 0x0A, &msg_id);
 
-            if (*message_id == msg_id)
+            if (dest_id == my_id)
             {
-                dw1000_subread_u40(RX_BUFFER, 0x05, T1);
-                dw1000_subread_u40(RX_BUFFER, 0x00, T4);
 
-                if (INFO_LOGS_EN)
+                if (*message_id == msg_id)
                 {
-                    LOG_INF("Timestamps received from INIT.");
+                    dw1000_subread_u40(RX_BUFFER, 0x05, T1);
+                    dw1000_subread_u40(RX_BUFFER, 0x00, T4);
+
+                    if (INFO_LOGS_EN)
+                    {
+                        LOG_INF("Timestamps received from INIT.");
+                    }
+                }
+                else
+                {
+                    *T1 = 0;
+                    *T2 = 0;
+                    *T3 = 0;
+                    *T4 = 0;
+                    if (INFO_LOGS_EN)
+                    {
+                        LOG_INF("Timestamps expected: %0d, received: %0d", *message_id, msg_id);
+                    }
                 }
             }
             else
             {
-                *T1 = 0;
-                *T2 = 0;
-                *T3 = 0;
-                *T4 = 0;
-                if (INFO_LOGS_EN)
-                {
-                    LOG_INF("Timestamps expected: %0d, received: %0d", *message_id, msg_id);
-                }
+                return FAILURE;
             }
         }
         else // POLL
         {
             dw1000_subread_u32(RX_BUFFER, 0x00, &buffer);
 
-            msg_id = buffer & 0xFF;
+            dest_id = (buffer >> 8) & 0xFF;
 
-            *message_id = msg_id;
-
-            if (INFO_LOGS_EN)
+            if (dest_id == my_id)
             {
-                LOG_INF("POLL %0d received from INIT.", msg_id);
-            }
+                msg_id = buffer & 0xFF;
+                *message_id = msg_id;
 
-            *T2 = get_rx_timestamp();
-            *T3 = send_resp_message(0x01, 0x00, msg_id);
+                if (INFO_LOGS_EN)
+                {
+                    LOG_INF("POLL %0d received from INIT.", msg_id);
+                }
 
-            if (INFO_LOGS_EN)
-            {
-                LOG_INF("Response %0d sent drom RESP.", msg_id);
+                *T2 = get_rx_timestamp();
+                *T3 = send_resp_message(my_id, TAG_ID, msg_id);
+
+                if (INFO_LOGS_EN)
+                {
+                    LOG_INF("Response %0d sent drom RESP.", msg_id);
+                }
             }
         }
 
