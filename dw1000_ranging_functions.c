@@ -549,3 +549,11 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
 
     return elapsed >= ONE_SECOND_TICKS;
 }
+
+const int antenna_delays[4] = {17082, 18111, 16565, 16183};
+
+void set_antenna_delay(int anchor_id)
+{
+    set_rx_antenna_delay(antenna_delays[anchor_id - 1]);
+    set_tx_antenna_delay(antenna_delays[anchor_id - 1]);
+}

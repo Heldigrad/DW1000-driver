@@ -259,8 +259,8 @@
 #define SYS_CTRL_TXDLYS 0x00000004UL /* Transmitter Delayed Sending (initiates sending when SYS_TIME == TXD_TIME */
 #define SYS_STATUS_TXERR (0x0408)    /* These bits are the 16 high bits of status register TXPUTE and HPDWARN flags */
 
-#define TX_ANT_DLY 16853
-#define RX_ANT_DLY 16853
+#define TX_ANT_DLY 16983
+#define RX_ANT_DLY 16983
 
 /* Delay between frames, in UWB microseconds. See NOTE 1 below. */
 #define POLL_TX_TO_RESP_RX_DLY_UUS 140
@@ -294,3 +294,5 @@
 
 #define ONE_SECOND_TICKS 998400000ULL            // ~ 1s in DW1000 time units
 #define TWO_SECONDS_TICKS (ONE_SECOND_TICKS * 2) // ~ 2s in DW1000 time units
+
+#define NR_OF_ANCHORS 4
