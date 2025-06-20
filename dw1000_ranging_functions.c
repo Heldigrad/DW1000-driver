@@ -35,12 +35,16 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     uint32_t status_reg;
     new_rx_enable(0);
 
+    uint64_t start_time = dw1000_read_sys_time();
+    uint64_t now = dw1000_read_sys_time();
+
     do
     {
+        now = dw1000_read_sys_time();
         dw1000_read_u32(SYS_STATUS, &status_reg);
-    } while (!(status_reg & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR)));
+    } while ((!(status_reg & (SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR))) || (!(has_1_second_passed(start_time, now))));
 
-    if (!(status_reg & SYS_STATUS_ALL_RX_ERR))
+    if ((!(status_reg & SYS_STATUS_ALL_RX_ERR)) && (status_reg & SYS_STATUS_RXFCG))
     {
         *timestamp = get_rx_timestamp();
         // LOG_INF("RX success! T2 = %08llX", *timestamp);
@@ -51,16 +55,14 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
 
         return SUCCESS;
     }
-    else
-    {
-        // LOG_INF("Errors encountered!");
-        // print_enabled_bits(status_reg);
+    // LOG_INF("Errors encountered!");
+    // print_enabled_bits(status_reg);
 
-        /* Clear RX error events in the DW1000 status register. */
-        dw1000_write_u32(SYS_STATUS, SYS_STATUS_ALL_RX_ERR);
-        rx_soft_reset();
-        return FAILURE;
-    }
+    /* Clear RX error events in the DW1000 status register. */
+    dw1000_write_u32(SYS_STATUS, SYS_STATUS_RXFCG | SYS_STATUS_ALL_RX_ERR);
+    rx_soft_reset();
+
+    return FAILURE;
 }
 
 int transmit(uint64_t data, int len, uint64_t *timestamp)
@@ -244,12 +246,6 @@ int get_poll_message(uint8_t src_id, uint8_t dest_id, uint64_t *timestamp)
     // LOG_INF("Received poll message = %0llX", message);
 
     uint8_t msg_type = (message >> 24) & 0xFF;
-    // uint8_t msg_src_id = (message >> 8) & 0xFF;
-    // uint8_t msg_dest_id = message & 0xFF;
-
-    // return (msg_type == POLL_MSG_TYPE) &&
-    //        (msg_dest_id == dest_id) &&
-    //        (msg_src_id == src_id);
 
     return (msg_type == POLL_MSG_TYPE);
 }
@@ -276,6 +272,7 @@ uint8_t get_rx_frame_len()
 int get_resp_message(uint8_t my_id, uint8_t Src_id, uint8_t message_id, uint64_t *timestamp, double *distance)
 {
     uint64_t message;
+
     int ret = receive(&message, timestamp);
 
     if (ret == SUCCESS)
@@ -298,16 +295,22 @@ int get_resp_message(uint8_t my_id, uint8_t Src_id, uint8_t message_id, uint64_t
                     }
                     return FAILURE;
                 }
+                return SUCCESS;
+            }
+            else
+            {
+                return FAILURE;
             }
         }
         else
         {
-            uint8_t src_id = (message >> 16) & 0xFF;
-            if (src_id == src_id)
+            uint8_t src_id = (message >> 32) & 0xFF;
+            if (src_id == Src_id)
             {
                 uint32_t distance_mm = message & 0xFFFFFFFF;
 
-                double distance = (double)distance_mm / 1000.0; // convert to m
+                *distance = (double)distance_mm / 1000.0; // convert to m
+                // LOG_INF("Distance from anchor %0d is %0.2fm", Src_id, distance);
             }
 
             return FAILURE; // so that the timestamp isn't used in ranging
@@ -437,10 +440,6 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, 
                     }
                 }
             }
-            else
-            {
-                return FAILURE;
-            }
         }
         else // POLL
         {
@@ -459,11 +458,14 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, 
                 }
 
                 *T2 = get_rx_timestamp();
+
+                k_msleep(10);
+
                 *T3 = send_resp_message(my_id, TAG_ID, msg_id);
 
                 if (INFO_LOGS_EN)
                 {
-                    LOG_INF("Response %0d sent drom RESP.", msg_id);
+                    LOG_INF("Response %0d sent from anchor nr. %0d.", msg_id, my_id);
                 }
             }
         }
@@ -519,4 +521,31 @@ int send_distance(uint8_t src_id, uint32_t distance)
 
         return FAILURE;
     }
+}
+
+// Replace this with your actual function to get SYS_TIME (40-bit timestamp)
+uint64_t dw1000_read_sys_time(void)
+{
+    uint64_t time;
+    dw1000_subread_u40(SYS_TIME, 0x00, &time);
+    return time;
+}
+
+// Timer check function
+bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
+{
+    uint64_t elapsed;
+
+    // DW1000 SYS_TIME is 40-bit and wraps around ~17.2 seconds
+    if (current_time >= start_time)
+    {
+        elapsed = current_time - start_time;
+    }
+    else
+    {
+        // handle 40-bit wraparound
+        elapsed = (0xFFFFFFFFFFULL - start_time) + current_time + 1;
+    }
+
+    return elapsed >= ONE_SECOND_TICKS;
 }

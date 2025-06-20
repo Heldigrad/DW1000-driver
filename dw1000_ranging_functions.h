@@ -50,3 +50,7 @@ double mean_distance(double distances[NR_OF_DISTANCES]);
 uint8_t get_rx_frame_len();
 
 int send_distance(uint8_t src_id, uint32_t distance);
+
+uint64_t dw1000_read_sys_time(void);
+
+bool has_1_second_passed(uint64_t start_time, uint64_t current_time);
