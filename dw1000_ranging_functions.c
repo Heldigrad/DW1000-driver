@@ -33,7 +33,7 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     // Clear RX buffer
     dw1000_write_u64(RX_BUFFER, 0x00);
     uint32_t status_reg;
-    new_rx_enable(0);
+    rx_enable();
 
     uint64_t start_time = dw1000_read_sys_time();
     uint64_t now = dw1000_read_sys_time();
@@ -69,9 +69,9 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
 {
     dw1000_subwrite_u64(TX_BUFFER, 0x00, data);
 
-    new_set_txfctrl(len);
+    set_txfctrl(len);
 
-    new_tx_start(0);
+    tx_start();
 
     uint32_t status;
     do
@@ -329,9 +329,9 @@ int send_timestamps(uint8_t Src_id, uint8_t Dest_id, uint64_t T1, uint64_t T4, u
     dw1000_subwrite_u40(TX_BUFFER, 0x05, T1);
     dw1000_subwrite_u40(TX_BUFFER, 0x00, T4);
 
-    new_set_txfctrl(14); // 14 bytes: 2x5 bytes (timestamps) + dev_id + dest_id + message_type + message_id
+    set_txfctrl(14); // 14 bytes: 2x5 bytes (timestamps) + dev_id + dest_id + message_type + message_id
 
-    new_tx_start(0);
+    tx_start();
 
     uint32_t status;
     do
@@ -359,7 +359,7 @@ int get_timestamps(uint8_t Dev_id, uint64_t *T1, uint64_t *T4)
 {
     uint32_t status_reg;
     uint8_t src_dev_id, frame_len;
-    new_rx_enable(0);
+    rx_enable();
 
     do
     {
@@ -398,7 +398,7 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, 
     uint32_t status_reg, buffer;
     uint8_t msg_id, src_id, dest_id, frame_len;
 
-    new_rx_enable(0);
+    rx_enable();
 
     do
     {
@@ -497,9 +497,9 @@ int send_distance(uint8_t src_id, uint32_t distance)
     dw1000_subwrite_u32(TX_BUFFER, 0x04, src_id);        // 1 byte
     dw1000_subwrite_u32(TX_BUFFER, 0x05, DIST_MSG_TYPE); // 1 byte
 
-    new_set_txfctrl(6); // 6 bytes
+    set_txfctrl(6); // 6 bytes
 
-    new_tx_start(0);
+    tx_start();
 
     uint32_t status;
     do

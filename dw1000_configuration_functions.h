@@ -6,17 +6,17 @@
 
 extern int idx;
 
-void check();
+void check_spi();
 
-void bip_init();
+void initialise();
 
-void bip_config();
+void configure();
 
-void new_set_txfctrl(uint16_t txFrameLength);
+void set_txfctrl(uint16_t txFrameLength);
 
-void new_rx_enable(int mode);
+void rx_enable();
 
-void new_tx_start(int mode);
+void tx_start();
 
 void rx_soft_reset(void);
 
