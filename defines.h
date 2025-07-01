@@ -278,8 +278,11 @@
 #define B20_SIGN_EXTEND_TEST (0x00100000UL)
 #define B20_SIGN_EXTEND_MASK (0xFFF00000UL)
 
-#define POLL_MSG_TYPE 0xC5 // poll message
-#define RESP_MSG_TYPE 0xC6 // resp message
+#define POLL1_MSG_TYPE 0xC5 // poll message
+#define RESP1_MSG_TYPE 0xC6 // resp message
+#define POLL2_MSG_TYPE 0xC7 // poll message
+#define RESP2_MSG_TYPE 0xC8 // resp message
+
 #define TS_MSG_TYPE 0xC7   // timestamp message
 #define DIST_MSG_TYPE 0xC8 // distance message
 
@@ -287,12 +290,34 @@
 
 #define NR_OF_DISTANCES 10
 
-#define INFO_LOGS_EN 0
+#define INF_LOGS_EN 1
 #define ERR_LOGS_EN 0
+#define DBG_LOGS_EN 0
+
+#define LOG_INF_IF_ENABLED(...)   \
+    do                            \
+    {                             \
+        if (INF_LOGS_EN)          \
+            LOG_INF(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_ERR_IF_ENABLED(...)   \
+    do                            \
+    {                             \
+        if (ERR_LOGS_EN)          \
+            LOG_ERR(__VA_ARGS__); \
+    } while (0)
+
+#define LOG_DBG_IF_ENABLED(...)   \
+    do                            \
+    {                             \
+        if (DBG_LOGS_EN)          \
+            LOG_DBG(__VA_ARGS__); \
+    } while (0)
 
 #define TAG_ID 0x00
 
 #define ONE_SECOND_TICKS 998400000ULL            // ~ 1s in DW1000 time units
 #define TWO_SECONDS_TICKS (ONE_SECOND_TICKS * 2) // ~ 2s in DW1000 time units
 
-#define NR_OF_ANCHORS 4
+#define NR_OF_ANCHORS 1

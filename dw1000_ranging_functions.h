@@ -29,17 +29,23 @@ int32_t read_carrier_integrator(void);
 
 double compute_distance_rep(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);
 
-uint64_t send_poll_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
+uint64_t send_poll1_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
 
-uint64_t send_resp_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id);
+uint64_t send_resp1_message(uint8_t src_id, uint64_t T2, uint8_t message_id);
 
-int get_resp_message(uint8_t my_id, uint8_t Src_id, uint8_t message_id, uint64_t *timestamp, double *distance);
+int send_resp2_message(uint8_t src_id, uint64_t T3, uint64_t T6, uint8_t message_id);
 
-int send_timestamps(uint8_t My_id, uint8_t dest_id, uint64_t T1, uint64_t T4, uint8_t message_id);
+int get_poll1_message(uint8_t src_id, uint8_t dest_id, uint8_t *message_id, uint64_t *timestamp);
 
-int get_timestamps(uint8_t msg_id, uint64_t *T1, uint64_t *T4);
+int get_resp1_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id, uint64_t *timestamp, uint64_t *T2);
 
-void get_msg_from_init(uint8_t my_id, uint64_t *T1, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint8_t *message_id);
+int get_poll2_message(uint8_t src_id, uint8_t dest_id, uint8_t *message_id, uint64_t *timestamp);
+
+int get_resp2_message(uint8_t src_id, uint8_t message_id, uint64_t *timestamp, uint64_t *T3, uint64_t *T6);
+
+void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, uint8_t *message_id);
+
+int get_msg_from_resp(uint8_t destination_id, uint64_t *T2, uint64_t *T3, uint64_t *T4, uint64_t *T5, uint64_t *T6, uint8_t message_id);
 
 double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4);
 
