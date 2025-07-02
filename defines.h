@@ -291,8 +291,8 @@
 #define NR_OF_DISTANCES 10
 
 #define INF_LOGS_EN 1
-#define ERR_LOGS_EN 0
-#define DBG_LOGS_EN 0
+#define ERR_LOGS_EN 1
+#define DBG_LOGS_EN 1
 
 #define LOG_INF_IF_ENABLED(...)   \
     do                            \

@@ -157,6 +157,7 @@ int dw1000_subread(uint8_t reg, uint16_t subaddr, uint8_t *data, size_t len)
 
 int dw1000_subread_u8(uint8_t reg, uint16_t subaddr, uint8_t *value)
 {
+    *value = 0;
     return dw1000_subread(reg, subaddr, value, sizeof(uint8_t));
 }
 
@@ -166,6 +167,7 @@ int dw1000_subread_u16(uint8_t reg, uint16_t subaddr, uint16_t *value)
     int ret = dw1000_subread(reg, subaddr, buffer, sizeof(buffer));
     if (ret == 0)
     {
+        *value = 0;
         *value = buffer[0] | ((uint16_t)buffer[1] << 8);
     }
     return ret;
@@ -177,6 +179,7 @@ int dw1000_subread_u32(uint8_t reg, uint16_t subaddr, uint32_t *value)
     int ret = dw1000_subread(reg, subaddr, buffer, sizeof(buffer));
     if (ret == 0)
     {
+        *value = 0;
         *value = ((uint32_t)buffer[0]) |
                  ((uint32_t)buffer[1] << 8) |
                  ((uint32_t)buffer[2] << 16) |
@@ -193,7 +196,7 @@ int dw1000_subread_u40(uint8_t reg, uint8_t subreg, uint64_t *value)
     {
         return ret;
     }
-
+    *value = 0;
     *value = ((uint64_t)buffer[0]) |
              ((uint64_t)buffer[1] << 8) |
              ((uint64_t)buffer[2] << 16) |
@@ -212,6 +215,7 @@ int dw1000_subread_u64(uint8_t reg, uint8_t subreg, uint64_t *value)
         return ret;
     }
 
+    *value = 0;
     *value = (uint64_t)buffer[0] |
              ((uint64_t)buffer[1] << 8) |
              ((uint64_t)buffer[2] << 16) |

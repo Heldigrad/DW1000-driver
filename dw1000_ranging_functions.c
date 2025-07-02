@@ -473,9 +473,10 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, 
         if (msg_type == POLL1_MSG_TYPE)
         {
             LOG_DBG_IF_ENABLED("Got POLL1!");
-            T6 = 0;
+            *T6 = 0;
             *message_id = msg_id;
             *T2 = get_rx_timestamp();
+            LOG_DBG_IF_ENABLED("T2 = %0llu", *T2);
             k_msleep(5);
             *T3 = send_resp1_message(my_id, *T2, *message_id);
         }
@@ -488,18 +489,12 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, 
                 *T3 = 0;
                 *T6 = 0;
 
-                dw1000_subwrite_u40(RX_TIME, 0x00, 0x00);
-                dw1000_subwrite_u40(TX_TIME, 0x00, 0x00);
-
                 return;
             }
             *T6 = get_rx_timestamp();
             k_msleep(5);
             send_resp2_message(my_id, *T3, *T6, msg_id);
             LOG_DBG_IF_ENABLED("Sent RESP2!");
-
-            dw1000_subwrite_u40(RX_TIME, 0x00, 0x00);
-            dw1000_subwrite_u40(TX_TIME, 0x00, 0x00);
         }
     }
 }
@@ -625,7 +620,7 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
     return elapsed >= ONE_SECOND_TICKS;
 }
 
-const int antenna_delays[4] = {16436, 18111, 16565, 16183};
+const int antenna_delays[4] = {16053, 18111, 16565, 16183};
 
 void set_antenna_delay(int anchor_id)
 {
@@ -668,28 +663,33 @@ int32_t read_carrier_integrator(void)
 double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6)
 {
     // Ensure all timestamps are masked to 40 bits
-    T1 &= 0xFFFFFFFFFFULL;
-    T2 &= 0xFFFFFFFFFFULL;
-    T3 &= 0xFFFFFFFFFFULL;
-    T4 &= 0xFFFFFFFFFFULL;
-    T5 &= 0xFFFFFFFFFFULL;
-    T6 &= 0xFFFFFFFFFFULL;
+    // T1 &= 0xFFFFFFFFFFULL;
+    // T2 &= 0xFFFFFFFFFFULL;
+    // T3 &= 0xFFFFFFFFFFULL;
+    // T4 &= 0xFFFFFFFFFFULL;
+    // T5 &= 0xFFFFFFFFFFULL;
+    // T6 &= 0xFFFFFFFFFFULL;
 
     // LOG_INF_IF_ENABLED("For ranging cycle nr. %0d:", Msg_id);
-    LOG_INF_IF_ENABLED("T1 = %0llu, T4 = %0llu, T5 = %0llu", T1, T4, T5);
-    LOG_INF_IF_ENABLED("T2 = %0llu, T3 = %0llu, T6 = %0llu", T2, T3, T6);
+    // LOG_INF_IF_ENABLED("T1 = %0llu, T4 = %0llu, T5 = %0llu", T1, T4, T5);
+    // LOG_INF_IF_ENABLED("T2 = %0llu, T3 = %0llu, T6 = %0llu", T2, T3, T6);
 
     // Calculate time deltas with wraparound-safe 64-bit math
-    uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
-    uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
-    uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
-    uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
+    // uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
+    // uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
+    // uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
+    // uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
 
-    LOG_INF("Tround1 = %llu, Tround2 = %llu", Tround1, Tround2);
-    LOG_INF("Treply1 = %llu, Treply2 = %llu", Treply1, Treply2);
+    int64_t Tround1 = ((int64_t)T4 - (int64_t)T1);
+    int64_t Treply1 = ((int64_t)T3 - (int64_t)T2);
+    int64_t Treply2 = ((int64_t)T5 - (int64_t)T4);
+    int64_t Tround2 = ((int64_t)T6 - (int64_t)T3);
 
-    int64_t numerator = (int64_t)(Tround1 * Treply2) - (int64_t)(Tround2 * Treply1);
-    uint64_t denominator = Tround1 + Tround2 + Treply1 + Treply2;
+    // LOG_INF_IF_ENABLED("Tround1 = %llu, Tround2 = %llu", Tround1, Tround2);
+    // LOG_INF_IF_ENABLED("Treply1 = %llu, Treply2 = %llu", Treply1, Treply2);
+
+    int64_t numerator = (int64_t)(Tround1 * Tround2) - (int64_t)(Treply2 * Treply1);
+    int64_t denominator = Tround1 + Tround2 + Treply1 + Treply2;
 
     if (denominator == 0)
         return -1.0;
