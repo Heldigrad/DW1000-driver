@@ -175,16 +175,45 @@ void set_delayed_trx_time(uint32_t starttime)
 uint64_t send_poll1_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id)
 {
     uint64_t tx_timestamp;
-    uint32_t poll = ((uint32_t)POLL1_MSG_TYPE << 24) |
-                    ((uint32_t)src_id << 16) |
-                    ((uint32_t)dest_id << 8) |
-                    (uint32_t)message_id;
 
-    transmit(poll, 4, &tx_timestamp);
+    dw1000_subwrite_u8(TX_BUFFER, 0x00, message_id);
+    dw1000_subwrite_u8(TX_BUFFER, 0x01, dest_id);
+    dw1000_subwrite_u8(TX_BUFFER, 0x02, src_id);
+    dw1000_subwrite_u8(TX_BUFFER, 0x03, POLL1_MSG_TYPE);
 
+    new_set_txfctrl(4);
+
+    new_tx_start(0);
+
+    uint32_t status;
+    do
+    {
+        dw1000_read_u32(SYS_STATUS, &status);
+    } while (!(status & (SYS_STATUS_TXFRS | SYS_STATUS_ALL_TX_ERR)));
+
+    if (!(status & SYS_STATUS_ALL_TX_ERR))
+    {
+        tx_timestamp = get_tx_timestamp();
+        // LOG_INF("TX success! T1 = %09llX", tx_timestamp);
+
+        /* Clear TX frame sent event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK);
+
+        // LOG_INF("T1 = %0llX", tx_timestamp);
+
+        return tx_timestamp;
+    }
+    else
+    {
+        LOG_ERR_IF_ENABLED("Errors encountered!");
+        print_enabled_bits(status);
+
+        /* Clear TX error event. */
+        dw1000_write_u32(SYS_STATUS, SYS_STATUS_TX_OK | SYS_STATUS_ALL_TX_ERR);
+
+        return -1;
+    }
     LOG_DBG_IF_ENABLED("Sent POLL1.");
-
-    return tx_timestamp;
 }
 
 uint64_t send_resp1_message(uint8_t src_id, uint64_t T2, uint8_t message_id)
@@ -434,6 +463,10 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, 
             *T2 = 0;
             *T3 = 0;
             *T6 = 0;
+
+            dw1000_subwrite_u40(RX_TIME, 0x00, 0x00);
+            dw1000_subwrite_u40(TX_TIME, 0x00, 0x00);
+
             return;
         }
 
@@ -454,12 +487,19 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, 
                 *T2 = 0;
                 *T3 = 0;
                 *T6 = 0;
+
+                dw1000_subwrite_u40(RX_TIME, 0x00, 0x00);
+                dw1000_subwrite_u40(TX_TIME, 0x00, 0x00);
+
                 return;
             }
             *T6 = get_rx_timestamp();
             k_msleep(5);
             send_resp2_message(my_id, *T3, *T6, msg_id);
-            LOG_ERR_IF_ENABLED("Sent RESP2!");
+            LOG_DBG_IF_ENABLED("Sent RESP2!");
+
+            dw1000_subwrite_u40(RX_TIME, 0x00, 0x00);
+            dw1000_subwrite_u40(TX_TIME, 0x00, 0x00);
         }
     }
 }
@@ -585,10 +625,110 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
     return elapsed >= ONE_SECOND_TICKS;
 }
 
-const int antenna_delays[4] = {17132, 18111, 16565, 16183};
+const int antenna_delays[4] = {16436, 18111, 16565, 16183};
 
 void set_antenna_delay(int anchor_id)
 {
     set_rx_antenna_delay(antenna_delays[anchor_id - 1]);
     set_tx_antenna_delay(antenna_delays[anchor_id - 1]);
+}
+
+int32_t read_carrier_integrator(void)
+{
+
+    uint32_t regval = 0;
+
+    int j;
+
+    uint8_t buffer[DRX_CARRIER_INT_LEN];
+
+    /* Read 3 bytes into buffer (21-bit quantity) */
+
+    dw1000_subread(DRX_CONF, DRX_CARRIER_INT_OFFSET, buffer, DRX_CARRIER_INT_LEN);
+
+    for (j = 2; j >= 0; j--) // arrange the three bytes into an unsigned integer value
+
+    {
+        regval = (regval << 8) + buffer[j];
+    }
+
+    if (regval & B20_SIGN_EXTEND_TEST)
+
+        regval |= B20_SIGN_EXTEND_MASK; // sign extend bit #20 to whole word
+
+    else
+
+        regval &= DRX_CARRIER_INT_MASK; // make sure upper bits are clear if not
+
+    // sign extending
+
+    return (int32_t)regval; // cast unsigned value to signed quantity.
+}
+
+double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6)
+{
+    // Ensure all timestamps are masked to 40 bits
+    T1 &= 0xFFFFFFFFFFULL;
+    T2 &= 0xFFFFFFFFFFULL;
+    T3 &= 0xFFFFFFFFFFULL;
+    T4 &= 0xFFFFFFFFFFULL;
+    T5 &= 0xFFFFFFFFFFULL;
+    T6 &= 0xFFFFFFFFFFULL;
+
+    // LOG_INF_IF_ENABLED("For ranging cycle nr. %0d:", Msg_id);
+    LOG_INF_IF_ENABLED("T1 = %0llu, T4 = %0llu, T5 = %0llu", T1, T4, T5);
+    LOG_INF_IF_ENABLED("T2 = %0llu, T3 = %0llu, T6 = %0llu", T2, T3, T6);
+
+    // Calculate time deltas with wraparound-safe 64-bit math
+    uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
+    uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
+    uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
+    uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
+
+    LOG_INF("Tround1 = %llu, Tround2 = %llu", Tround1, Tround2);
+    LOG_INF("Treply1 = %llu, Treply2 = %llu", Treply1, Treply2);
+
+    int64_t numerator = (int64_t)(Tround1 * Treply2) - (int64_t)(Tround2 * Treply1);
+    uint64_t denominator = Tround1 + Tround2 + Treply1 + Treply2;
+
+    if (denominator == 0)
+        return -1.0;
+
+    double tof_ticks = (double)numerator / (double)denominator;
+    double tof_seconds = tof_ticks * DWT_TIME_UNITS;
+    double distance = tof_seconds * SPEED_OF_LIGHT;
+
+    return distance;
+}
+
+double compute_ds_twr_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6)
+{
+    // Mask to 40 bits
+    T1 &= 0xFFFFFFFFFFULL;
+    T2 &= 0xFFFFFFFFFFULL;
+    T3 &= 0xFFFFFFFFFFULL;
+    T4 &= 0xFFFFFFFFFFULL;
+    T5 &= 0xFFFFFFFFFFULL;
+    T6 &= 0xFFFFFFFFFFULL;
+
+    // Calculate time intervals
+    uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
+    uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
+    uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
+    uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
+
+    // Avoid division by zero
+    uint64_t denom = Tround1 + Tround2 + Treply1 + Treply2;
+    if (denom == 0)
+        return -1.0;
+
+    // ToF calculation
+    double num = (double)((Tround1 * Treply2) - (Tround2 * Treply1));
+    double tof_ticks = num / (double)denom;
+
+    // Convert to distance
+    double tof_seconds = tof_ticks * DWT_TIME_UNITS;
+    double distance = tof_seconds * SPEED_OF_LIGHT;
+
+    return distance;
 }
