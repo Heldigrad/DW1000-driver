@@ -620,14 +620,6 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
     return elapsed >= ONE_SECOND_TICKS;
 }
 
-const int antenna_delays[4] = {16327, 16357, 16337, 16335};
-
-void set_antenna_delay(int anchor_id)
-{
-    set_rx_antenna_delay(antenna_delays[anchor_id - 1]);
-    set_tx_antenna_delay(antenna_delays[anchor_id - 1]);
-}
-
 int32_t read_carrier_integrator(void)
 {
 
@@ -725,4 +717,12 @@ void compute_coord(double Distances[4])
     double Z = get_coord(DIST_X, DIST_Y, DO, DX, DY);
 
     LOG_INF("P = (%0f, %0f, %0f)", X, Y, Z);
+}
+
+const int antenna_delays[4] = {16343, 16379, 16347, 16343};
+
+void set_antenna_delay(int anchor_id)
+{
+    set_rx_antenna_delay(antenna_delays[anchor_id - 1]);
+    set_tx_antenna_delay(antenna_delays[anchor_id - 1]);
 }
