@@ -701,6 +701,28 @@ double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint
     return distance;
 }
 
-void compute_coord()
+double get_coord(double B1, double B2, double DO, double D1, double D2)
 {
+    double B3 = sqrt(B1 * B1 + B2 * B2);
+    // LOG_INF("B1 = %0f, B2 = %0f, B3 = %0f", B1, B2, B3);
+
+    double cosA = (DO * DO + B1 * B1 - D1 * D1) / (2 * B1 * DO);
+    double cosB = (DO * DO + B2 * B2 - D2 * D2) / (2 * B2 * DO);
+    double cosC = sqrt(1 - cosA * cosA - cosB * cosB);
+
+    return cosC * DO;
+}
+
+void compute_coord(double Distances[4])
+{
+    double DO = Distances[0];
+    double DX = Distances[1];
+    double DY = Distances[2];
+    double DZ = Distances[3];
+
+    double X = get_coord(DIST_Z, DIST_Y, DO, DZ, DY);
+    double Y = get_coord(DIST_X, DIST_Z, DO, DX, DZ);
+    double Z = get_coord(DIST_X, DIST_Y, DO, DX, DY);
+
+    LOG_INF("P = (%0f, %0f, %0f)", X, Y, Z);
 }

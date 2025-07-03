@@ -1,5 +1,7 @@
 #pragma once
 
+#include <math.h>
+
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/drivers/gpio.h>

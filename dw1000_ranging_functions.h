@@ -69,4 +69,6 @@ double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint
 
 int32_t read_carrier_integrator_gipi(void);
 
-void compute_coord();
+double get_coord(double B1, double B2, double DO, double D1, double D2);
+
+void compute_coord(double Distances[4]);

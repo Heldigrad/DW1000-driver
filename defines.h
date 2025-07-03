@@ -332,6 +332,6 @@
 #define ANCHOR_Y 0x03
 #define ANCHOR_Z 0x04
 
-#define DIST_X 0x04
-#define DIST_Y 0x04
-#define DIST_Z 0x04
+#define DIST_X 3.0
+#define DIST_Y 3.0
+#define DIST_Z 2.25
