@@ -290,9 +290,9 @@
 
 #define NR_OF_DISTANCES 10
 
-#define INF_LOGS_EN 1
-#define ERR_LOGS_EN 1
-#define DBG_LOGS_EN 1
+#define INF_LOGS_EN 0
+#define ERR_LOGS_EN 0
+#define DBG_LOGS_EN 0
 
 #define LOG_INF_IF_ENABLED(...)   \
     do                            \
@@ -320,9 +320,18 @@
 #define ONE_SECOND_TICKS 998400000ULL            // ~ 1s in DW1000 time units
 #define TWO_SECONDS_TICKS (ONE_SECOND_TICKS * 2) // ~ 2s in DW1000 time units
 
-#define NR_OF_ANCHORS 1
+#define NR_OF_ANCHORS 4
 
 #define FREQ_OFFSET_MULTIPLIER (998.4e6 / 2.0 / 1024.0 / 131072.0)
 
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_2 (-1.0e6 / 3993.6e6)
 #define HERTZ_TO_PPM_MULTIPLIER_CHAN_5 (-1.0e6 / 6489.6e6)
+
+#define ANCHOR_O 0x01
+#define ANCHOR_X 0x02
+#define ANCHOR_Y 0x03
+#define ANCHOR_Z 0x04
+
+#define DIST_X 0x04
+#define DIST_Y 0x04
+#define DIST_Z 0x04

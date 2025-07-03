@@ -67,8 +67,6 @@ int32_t read_carrier_integrator(void);
 
 double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6);
 
-double compute_ds_twr_distance_with_cor(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6, double ppm_offset);
-
-double compute_ds_twr_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6);
-
 int32_t read_carrier_integrator_gipi(void);
+
+void compute_coord();

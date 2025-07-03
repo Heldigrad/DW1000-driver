@@ -620,7 +620,7 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
     return elapsed >= ONE_SECOND_TICKS;
 }
 
-const int antenna_delays[4] = {16053, 18111, 16565, 16183};
+const int antenna_delays[4] = {16327, 16357, 16337, 16335};
 
 void set_antenna_delay(int anchor_id)
 {
@@ -701,34 +701,6 @@ double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint
     return distance;
 }
 
-double compute_ds_twr_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6)
+void compute_coord()
 {
-    // Mask to 40 bits
-    T1 &= 0xFFFFFFFFFFULL;
-    T2 &= 0xFFFFFFFFFFULL;
-    T3 &= 0xFFFFFFFFFFULL;
-    T4 &= 0xFFFFFFFFFFULL;
-    T5 &= 0xFFFFFFFFFFULL;
-    T6 &= 0xFFFFFFFFFFULL;
-
-    // Calculate time intervals
-    uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
-    uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
-    uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
-    uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
-
-    // Avoid division by zero
-    uint64_t denom = Tround1 + Tround2 + Treply1 + Treply2;
-    if (denom == 0)
-        return -1.0;
-
-    // ToF calculation
-    double num = (double)((Tround1 * Treply2) - (Tround2 * Treply1));
-    double tof_ticks = num / (double)denom;
-
-    // Convert to distance
-    double tof_seconds = tof_ticks * DWT_TIME_UNITS;
-    double distance = tof_seconds * SPEED_OF_LIGHT;
-
-    return distance;
 }
