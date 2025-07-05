@@ -31,7 +31,7 @@ int receive(uint64_t *buffer, uint64_t *timestamp)
     // Clear RX buffer
     dw1000_write_u64(RX_BUFFER, 0x00);
     uint32_t status_reg;
-    new_rx_enable(0);
+    rx_enable(0);
 
     uint64_t start_time = dw1000_read_sys_time();
     uint64_t now = dw1000_read_sys_time();
@@ -67,9 +67,9 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
 {
     dw1000_subwrite_u64(TX_BUFFER, 0x00, data);
 
-    new_set_txfctrl(len);
+    set_txfctrl(len);
 
-    new_tx_start(0);
+    tx_start(0);
 
     uint32_t status;
     do
@@ -99,79 +99,6 @@ int transmit(uint64_t data, int len, uint64_t *timestamp)
     }
 }
 
-double compute_distance(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
-{
-    uint64_t Tround, Treply, Tprop;
-    if (T4 < T1)
-    {
-        // wrap-around correction (max 32-bit value is 0xFFFFFFFF)
-        Tround = (uint64_t)(T4 + (1ULL << 32)) - T1;
-    }
-    else
-    {
-        Tround = T4 - T1;
-    }
-    if (T3 < T2)
-    {
-        // wrap-around correction (max 32-bit value is 0xFFFFFFFF)
-        Treply = (uint64_t)(T3 + (1ULL << 32)) - T2;
-    }
-    else
-    {
-        // Time reply duration
-        Treply = T3 - T2;
-    }
-
-    // One-way time of flight
-    Tprop = (Tround - Treply) / 2;
-
-    // Convert to seconds using DW1000 time units
-    double tof_sec = Tprop * DWT_TIME_UNITS;
-
-    // Compute distance
-    double distance_m = tof_sec * SPEED_OF_LIGHT;
-
-    return distance_m;
-}
-
-void set_rx_after_tx_delay(uint32_t rxDelayTime)
-{
-    uint32_t val;
-    dw1000_read_u32(ACK_RESP_T, &val); // Read ACK_RESP_T_ID register
-
-    val &= ~(ACK_RESP_T_W4R_TIM_MASK); // Clear the timer (19:0)
-
-    val |= (rxDelayTime & ACK_RESP_T_W4R_TIM_MASK); // In UWB microseconds (e.g. turn the receiver on 20uus after TX)
-
-    dw1000_write_u32(ACK_RESP_T, val);
-}
-
-void set_rx_timeout(uint16_t time)
-{
-    uint8_t temp;
-    dw1000_subread_u8(SYS_CFG, 3, &temp);
-
-    if (time > 0)
-    {
-        dw1000_subwrite_u8(RX_FWTO, 0x00, time);
-
-        temp |= (uint8_t)(SYS_CFG_RXWTOE >> 24); // Shift RXWTOE mask as we read
-                                                 // the upper byte only
-
-        dw1000_subwrite_u8(SYS_CFG, 3, temp); // Write at offset 3 to write the upper byte only
-    }
-    else
-    {
-        temp &= ~((uint8_t)(SYS_CFG_RXWTOE >> 24)); // Shift RXWTOE mask as we read the upper byte only
-        dw1000_subwrite_u8(SYS_CFG, 3, temp);       // Write at offset 3 to write the upper byte only
-    }
-}
-
-void set_delayed_trx_time(uint32_t starttime)
-{
-    dw1000_subwrite_u32(DX_TIME, 1, starttime); // Write at offset 1 as the lower 9 bits of this register are ignored
-}
-
 uint64_t send_poll1_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id)
 {
     uint64_t tx_timestamp;
@@ -181,9 +108,9 @@ uint64_t send_poll1_message(uint8_t src_id, uint8_t dest_id, uint8_t message_id)
     dw1000_subwrite_u8(TX_BUFFER, 0x02, src_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x03, POLL1_MSG_TYPE);
 
-    new_set_txfctrl(4);
+    set_txfctrl(4);
 
-    new_tx_start(0);
+    tx_start(0);
 
     uint32_t status;
     do
@@ -225,9 +152,9 @@ uint64_t send_resp1_message(uint8_t src_id, uint64_t T2, uint8_t message_id)
     dw1000_subwrite_u8(TX_BUFFER, 0x06, src_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x07, RESP1_MSG_TYPE);
 
-    new_set_txfctrl(8);
+    set_txfctrl(8);
 
-    new_tx_start(0);
+    tx_start(0);
 
     uint32_t status;
     do
@@ -279,9 +206,9 @@ int send_resp2_message(uint8_t src_id, uint64_t T3, uint64_t T6, uint8_t message
     dw1000_subwrite_u8(TX_BUFFER, 0x0B, src_id);
     dw1000_subwrite_u8(TX_BUFFER, 0x0C, RESP2_MSG_TYPE);
 
-    new_set_txfctrl(13);
+    set_txfctrl(13);
 
-    new_tx_start(0);
+    tx_start(0);
 
     uint32_t status;
     do
@@ -383,7 +310,7 @@ int get_resp2_message(uint8_t src_id, uint8_t message_id, uint64_t *timestamp, u
     uint8_t frame_len, msg_id, source_id, msg_type;
 
     uint32_t status_reg;
-    new_rx_enable(0);
+    rx_enable(0);
 
     uint64_t start_time = dw1000_read_sys_time();
     uint64_t now = dw1000_read_sys_time();
@@ -438,7 +365,7 @@ void get_msg_from_init(uint8_t my_id, uint64_t *T2, uint64_t *T3, uint64_t *T6, 
     uint32_t status_reg;
     uint8_t msg_type, msg_id, src_id, dest_id;
 
-    new_rx_enable(0);
+    rx_enable(0);
 
     uint64_t start_time = dw1000_read_sys_time();
     uint64_t now = dw1000_read_sys_time();
@@ -504,7 +431,7 @@ int get_msg_from_resp(uint8_t destination_id, uint64_t *T2, uint64_t *T3, uint64
     uint32_t status_reg;
     uint8_t msg_id, source_id, frame_len;
 
-    new_rx_enable(0);
+    rx_enable(0);
 
     uint64_t start_time = dw1000_read_sys_time();
     uint64_t now = dw1000_read_sys_time();
@@ -583,17 +510,6 @@ int get_msg_from_resp(uint8_t destination_id, uint64_t *T2, uint64_t *T3, uint64
     }
 }
 
-double compute_distance_meters(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4)
-{
-    uint64_t round_trip_time = T4 - T1;
-    uint64_t reply_time = T3 - T2;
-
-    double tof_dtu = (double)(round_trip_time - reply_time) / 2.0;
-    double tof_sec = tof_dtu * DWT_TIME_UNITS;
-    return tof_sec * SPEED_OF_LIGHT;
-}
-
-// Replace this with your actual function to get SYS_TIME (40-bit timestamp)
 uint64_t dw1000_read_sys_time(void)
 {
     uint64_t time;
@@ -601,7 +517,6 @@ uint64_t dw1000_read_sys_time(void)
     return time;
 }
 
-// Timer check function
 bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
 {
     uint64_t elapsed;
@@ -620,65 +535,12 @@ bool has_1_second_passed(uint64_t start_time, uint64_t current_time)
     return elapsed >= ONE_SECOND_TICKS;
 }
 
-int32_t read_carrier_integrator(void)
-{
-
-    uint32_t regval = 0;
-
-    int j;
-
-    uint8_t buffer[DRX_CARRIER_INT_LEN];
-
-    /* Read 3 bytes into buffer (21-bit quantity) */
-
-    dw1000_subread(DRX_CONF, DRX_CARRIER_INT_OFFSET, buffer, DRX_CARRIER_INT_LEN);
-
-    for (j = 2; j >= 0; j--) // arrange the three bytes into an unsigned integer value
-
-    {
-        regval = (regval << 8) + buffer[j];
-    }
-
-    if (regval & B20_SIGN_EXTEND_TEST)
-
-        regval |= B20_SIGN_EXTEND_MASK; // sign extend bit #20 to whole word
-
-    else
-
-        regval &= DRX_CARRIER_INT_MASK; // make sure upper bits are clear if not
-
-    // sign extending
-
-    return (int32_t)regval; // cast unsigned value to signed quantity.
-}
-
 double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint64_t T4, uint64_t T5, uint64_t T6)
 {
-    // Ensure all timestamps are masked to 40 bits
-    // T1 &= 0xFFFFFFFFFFULL;
-    // T2 &= 0xFFFFFFFFFFULL;
-    // T3 &= 0xFFFFFFFFFFULL;
-    // T4 &= 0xFFFFFFFFFFULL;
-    // T5 &= 0xFFFFFFFFFFULL;
-    // T6 &= 0xFFFFFFFFFFULL;
-
-    // LOG_INF_IF_ENABLED("For ranging cycle nr. %0d:", Msg_id);
-    // LOG_INF_IF_ENABLED("T1 = %0llu, T4 = %0llu, T5 = %0llu", T1, T4, T5);
-    // LOG_INF_IF_ENABLED("T2 = %0llu, T3 = %0llu, T6 = %0llu", T2, T3, T6);
-
-    // Calculate time deltas with wraparound-safe 64-bit math
-    // uint64_t Tround1 = (T4 - T1) & 0xFFFFFFFFFFULL;
-    // uint64_t Treply1 = (T3 - T2) & 0xFFFFFFFFFFULL;
-    // uint64_t Treply2 = (T5 - T4) & 0xFFFFFFFFFFULL;
-    // uint64_t Tround2 = (T6 - T3) & 0xFFFFFFFFFFULL;
-
     int64_t Tround1 = ((int64_t)T4 - (int64_t)T1);
     int64_t Treply1 = ((int64_t)T3 - (int64_t)T2);
     int64_t Treply2 = ((int64_t)T5 - (int64_t)T4);
     int64_t Tround2 = ((int64_t)T6 - (int64_t)T3);
-
-    // LOG_INF_IF_ENABLED("Tround1 = %llu, Tround2 = %llu", Tround1, Tround2);
-    // LOG_INF_IF_ENABLED("Treply1 = %llu, Treply2 = %llu", Treply1, Treply2);
 
     int64_t numerator = (int64_t)(Tround1 * Tround2) - (int64_t)(Treply2 * Treply1);
     int64_t denominator = Tround1 + Tround2 + Treply1 + Treply2;
@@ -695,9 +557,6 @@ double compute_ds_twr_distance_basic(uint64_t T1, uint64_t T2, uint64_t T3, uint
 
 double get_coord(double B1, double B2, double DO, double D1, double D2)
 {
-    double B3 = sqrt(B1 * B1 + B2 * B2);
-    // LOG_INF("B1 = %0f, B2 = %0f, B3 = %0f", B1, B2, B3);
-
     double cosA = (DO * DO + B1 * B1 - D1 * D1) / (2 * B1 * DO);
     double cosB = (DO * DO + B2 * B2 - D2 * D2) / (2 * B2 * DO);
     double cosC = sqrt(1 - cosA * cosA - cosB * cosB);

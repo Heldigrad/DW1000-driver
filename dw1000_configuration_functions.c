@@ -1,7 +1,5 @@
 #include "dw1000_configuration_functions.h"
 
-int idx = 0;
-
 // SYS_STATUS BITs DESCRIPTION
 const char *bit_descriptions[32] = {
     "IRQS   - Interrupt Request Status",
@@ -37,15 +35,7 @@ const char *bit_descriptions[32] = {
     "HSRBP   - Host Side Receive Buffer Pointer",
     "ICRBP   - IC side Receive Buffer Pointer"};
 
-void check()
-{
-    uint32_t dev_id;
-    dw1000_read_u32(0x00, &dev_id);
-    LOG_INF("idx = %d %0X", idx, dev_id);
-    idx++;
-}
-
-void bip_init()
+void initialize()
 {
     dw1000_write_u8(0x36, 0x01);
     dw1000_subwrite_u8(0x36, 0x01, 0x00);
@@ -96,7 +86,7 @@ void bip_init()
     dw1000_subwrite_u8(AON, 0x0A, 0x00);
 }
 
-void bip_config()
+void configure()
 {
 
     dw1000_write_u32(SYS_CFG, 0x00000000 | (1 << 12));
@@ -119,8 +109,8 @@ void bip_config()
 
     dw1000_subwrite_u32(DRX_CONF, DRX_TUNE2, 0x313B006B);
     dw1000_subwrite_u16(DRX_CONF, 0x20, 0x00000081);
-    dw1000_subwrite_u32(AGC_CFG_STS_ID, 0xC, 0x2502A907);
-    dw1000_subwrite_u32(AGC_CFG_STS_ID, 0x4, 0x0000889B);
+    dw1000_subwrite_u32(AGC_CTRL, 0xC, 0x2502A907);
+    dw1000_subwrite_u32(AGC_CTRL, 0x4, 0x0000889B);
     dw1000_write_u8(USR_SFD, 0x08);
     dw1000_write_u32(CHAN_CTRL, 0x4A7A0055);
     dw1000_write_u32(TX_FCTRL, 0x00164000);
@@ -137,13 +127,13 @@ void bip_config()
     dw1000_write_u16(0x18, 0x4034);
 }
 
-void new_set_txfctrl(uint16_t txFrameLength)
+void set_txfctrl(uint16_t txFrameLength)
 {
     uint32_t val = 0x16C000 | (txFrameLength + 2);
     dw1000_write_u32(TX_FCTRL, val);
 }
 
-void new_rx_enable(int mode)
+void rx_enable(int mode)
 {
     uint16_t temp;
 
@@ -157,7 +147,7 @@ void new_rx_enable(int mode)
     dw1000_subwrite_u16(SYS_CTRL, 0x00, temp);
 }
 
-void new_tx_start(int mode)
+void tx_start(int mode)
 {
     uint8_t temp = 0x00;
 

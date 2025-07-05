@@ -4,19 +4,15 @@
 #include "spi_read_functions.h"
 #include "spi_write_functions.h"
 
-extern int idx;
+void initialize();
 
-void check();
+void configure();
 
-void bip_init();
+void set_txfctrl(uint16_t txFrameLength);
 
-void bip_config();
+void rx_enable(int mode);
 
-void new_set_txfctrl(uint16_t txFrameLength);
-
-void new_rx_enable(int mode);
-
-void new_tx_start(int mode);
+void tx_start(int mode);
 
 void rx_soft_reset(void);
 
